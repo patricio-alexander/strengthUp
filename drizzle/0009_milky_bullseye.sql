@@ -1,0 +1,1 @@
+ALTER TABLE `exercises` RENAME COLUMN "giftId" TO "gifId";

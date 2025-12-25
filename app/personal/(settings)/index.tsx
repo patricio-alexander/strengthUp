@@ -17,13 +17,10 @@ import { useHourToTrain } from "@/hooks/useHourToTrain";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
 import { useAppNotifications } from "@/hooks/useAppNotifications";
+import { supabase } from "@/lib/supabase";
 
 export default function SettingsScreen() {
-  const { sendInstantNotification, addNotificationAtDate } =
-    useAppNotifications();
-  const { userId, setUser, setRole } = useUserStore();
-  const db = useSQLiteContext();
-  const drizzleDb = drizzle(db);
+  const { sendInstantNotification } = useAppNotifications();
   const [show, setShow] = useState(false);
   const { existHour, setHourToTraining, hour } = useHourToTrain();
   const showPicker = () => {
@@ -31,13 +28,7 @@ export default function SettingsScreen() {
   };
 
   const logout = async () => {
-    await drizzleDb
-      .update(users)
-      .set({ loggedIn: false })
-      .where(eq(users.id, userId));
-    setUser({ user: "", userId: 0 });
-    setRole({ role: null });
-    router.replace("/");
+    await supabase.auth.signOut();
   };
 
   return (

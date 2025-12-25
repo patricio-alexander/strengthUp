@@ -105,14 +105,14 @@ export default function HomeScreen() {
   const [showModalInfo, setShowModalInfo] = useState(false);
 
   const { data } = useLiveQuery(db.select().from(sets));
-  const progressIndex = usePerformanceIndex(data);
-  const { block, getBlock, exist } = useBlockTrain(new Date().getDay());
+  //const progressIndex = usePerformanceIndex(data);
+  //const { block, getBlock, exist } = useBlockTrain(new Date().getDay());
 
-  const { filters, onChangeFilter, range } = useFilters();
+  //const { filters, onChangeFilter, range } = useFilters();
 
-  const lineChart = useChartData(range, data);
+  //const lineChart = useChartData(range, data);
   const [show, setShow] = useState(false);
-  const { existHour, setHourToTraining } = useHourToTrain();
+  // const { existHour, setHourToTraining } = useHourToTrain();
 
   const showPicker = () => {
     setShow(true);
@@ -133,7 +133,7 @@ export default function HomeScreen() {
           onPress: async () => {
             await TrainingFacade.removeRoutine(routineId);
             getRoutines();
-            getBlock();
+            //getBlock();
 
             setShowModalEdit(false);
           },
@@ -213,73 +213,73 @@ export default function HomeScreen() {
           </Link>
         )}
 
-        {!existHour && (
-          <ItemList
-            onPress={showPicker}
-            value={() => {
-              return (
-                <View>
-                  <CardTitle>Establece tu hora de entrenamiento</CardTitle>
-                  <View style={styles.cardContent}>
-                    <Octicons name="clock" size={20} color={tint} />
-                    <ThemedText>
-                      Selecciona la hora a la que entrenas, así podremos
-                      recordártelo justo a esa hora.
-                    </ThemedText>
-                  </View>
-                </View>
-              );
-            }}
-          />
-        )}
+        {/* {!existHour && ( */}
+        {/*   <ItemList */}
+        {/*     onPress={showPicker} */}
+        {/*     value={() => { */}
+        {/*       return ( */}
+        {/*         <View> */}
+        {/*           <CardTitle>Establece tu hora de entrenamiento</CardTitle> */}
+        {/*           <View style={styles.cardContent}> */}
+        {/*             <Octicons name="clock" size={20} color={tint} /> */}
+        {/*             <ThemedText> */}
+        {/*               Selecciona la hora a la que entrenas, así podremos */}
+        {/*               recordártelo justo a esa hora. */}
+        {/*             </ThemedText> */}
+        {/*           </View> */}
+        {/*         </View> */}
+        {/*       ); */}
+        {/*     }} */}
+        {/*   /> */}
+        {/* )} */}
 
-        {show && (
-          <DateTimePicker
-            testID="dateTimePicker"
-            value={new Date()}
-            mode={"time"}
-            is24Hour={false}
-            onChange={(v: DateTimePickerEvent) => {
-              if (v.type === "dismissed") return setShow(false);
-              setShow(false);
-              setHourToTraining(v);
-            }}
-          />
-        )}
+        {/* {show && ( */}
+        {/*   <DateTimePicker */}
+        {/*     testID="dateTimePicker" */}
+        {/*     value={new Date()} */}
+        {/*     mode={"time"} */}
+        {/*     is24Hour={false} */}
+        {/*     onChange={(v: DateTimePickerEvent) => { */}
+        {/*       if (v.type === "dismissed") return setShow(false); */}
+        {/*       setShow(false); */}
+        {/*       setHourToTraining(v); */}
+        {/*     }} */}
+        {/*   /> */}
+        {/* )} */}
 
-        {exist ? (
-          <Link
-            href={{
-              pathname: "/personal/(routines)/day/[...day]",
-              params: {
-                day: [block.name, block.id],
-              },
-            }}
-            asChild
-          >
-            <ItemList
-              value={() => {
-                return (
-                  <View>
-                    <CardTitle>Bloque ha entrenar (hoy)</CardTitle>
-                    <View style={styles.cardContent}>
-                      <Octicons name="zap" size={20} color={tint} />
-                      <ThemedText>{block.name}</ThemedText>
-                    </View>
-                  </View>
-                );
-              }}
-            />
-          </Link>
-        ) : (
-          <Card>
-            <CardTitle>Bloque ha entrenar (hoy)</CardTitle>
-            <View style={styles.cardContent}>
-              <Octicons name="zap" size={20} color={tint} />
-              <ThemedText>No existe bloque asignado para hoy</ThemedText>
-            </View>
-          </Card>
-        )}
+        {/* {exist ? ( */}
+        {/*   <Link */}
+        {/*     href={{ */}
+        {/*       pathname: "/personal/(routines)/day/[...day]", */}
+        {/*       params: { */}
+        {/*         day: [block.name, block.id], */}
+        {/*       }, */}
+        {/*     }} */}
+        {/*     asChild */}
+        {/*   > */}
+        {/*     <ItemList */}
+        {/*       value={() => { */}
+        {/*         return ( */}
+        {/*           <View> */}
+        {/*             <CardTitle>Bloque ha entrenar (hoy)</CardTitle> */}
+        {/*             <View style={styles.cardContent}> */}
+        {/*               <Octicons name="zap" size={20} color={tint} /> */}
+        {/*               <ThemedText>{block.name}</ThemedText> */}
+        {/*             </View> */}
+        {/*           </View> */}
+        {/*         ); */}
+        {/*       }} */}
+        {/*     /> */}
+        {/*   </Link> */}
+        {/* ) : ( */}
+        {/*   <Card> */}
+        {/*     <CardTitle>Bloque ha entrenar (hoy)</CardTitle> */}
+        {/*     <View style={styles.cardContent}> */}
+        {/*       <Octicons name="zap" size={20} color={tint} /> */}
+        {/*       <ThemedText>No existe bloque asignado para hoy</ThemedText> */}
+        {/*     </View> */}
+        {/*   </Card> */}
+        {/* )} */}
 
         <Card>
           <View
@@ -299,7 +299,7 @@ export default function HomeScreen() {
               onPress={() => setVisibleIndex(true)}
             />
           </View>
-          <LevelProgressBar value={progressIndex} />
+          <LevelProgressBar value={0} />
         </Card>
         <Card>
           <View
@@ -318,36 +318,36 @@ export default function HomeScreen() {
             />
           </View>
 
-          <FilterBar
-            filters={filters}
-            onChange={(key) => onChangeFilter(key)}
-          />
-          <View>
-            <LineChart
-              width={260}
-              color={tint}
-              curved
-              initialSpacing={30}
-              areaChart
-              startFillColor={tint}
-              endFillColor={primary}
-              data={lineChart}
-              spacing={80}
-              noOfSections={4}
-              dataPointsColor={text}
-              yAxisColor={foreground}
-              xAxisColor={foreground}
-              xAxisLabelTextStyle={{
-                fontFamily: "Inter_500Medium",
-
-                color: text,
-              }}
-              yAxisTextStyle={{
-                fontFamily: "Inter_500Medium",
-                color: text,
-              }}
-            />
-          </View>
+          {/* <FilterBar */}
+          {/*   filters={filters} */}
+          {/*   onChange={(key) => onChangeFilter(key)} */}
+          {/* /> */}
+          {/* <View> */}
+          {/*   <LineChart */}
+          {/*     width={260} */}
+          {/*     color={tint} */}
+          {/*     curved */}
+          {/*     initialSpacing={30} */}
+          {/*     areaChart */}
+          {/*     startFillColor={tint} */}
+          {/*     endFillColor={primary} */}
+          {/*     data={lineChart} */}
+          {/*     spacing={80} */}
+          {/*     noOfSections={4} */}
+          {/*     dataPointsColor={text} */}
+          {/*     yAxisColor={foreground} */}
+          {/*     xAxisColor={foreground} */}
+          {/*     xAxisLabelTextStyle={{ */}
+          {/*       fontFamily: "Inter_500Medium", */}
+          {/**/}
+          {/*       color: text, */}
+          {/*     }} */}
+          {/*     yAxisTextStyle={{ */}
+          {/*       fontFamily: "Inter_500Medium", */}
+          {/*       color: text, */}
+          {/*     }} */}
+          {/*   /> */}
+          {/* </View> */}
         </Card>
       </ScrollView>
       <Modal

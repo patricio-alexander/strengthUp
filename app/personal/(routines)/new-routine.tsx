@@ -53,9 +53,7 @@ type routineIA = {
 
 export default function ModalNewRoutine() {
   const { userId, setIsPremium, isPremium } = useUserStore();
-  
-  const db = useSQLiteContext();
-  const drizzleDb = drizzle(db);
+
   const { tint } = useColors();
   const [generateAI, setGenerateAI] = useState(false);
   const [checkAllInputs, setCheckAllInputs] = useState(false);
@@ -143,75 +141,75 @@ export default function ModalNewRoutine() {
     }
   };
 
-  const addRoutineGenerateByIA = async (routine: routineIA) => {
-    //console.log("Agregando rutina a DB");
-    //console.log(routine);
-    const [{ rouId }] = await drizzleDb
-      .insert(routines)
-      .values({
-        name: routine.routinename,
-        userId,
-      })
-      .returning({ rouId: routines.id });
-
-    const daysInsert = routine.days.map((d: days) => ({
-      name: d.name,
-      routineId: rouId,
-    }));
-
-    const daysReturn = await drizzleDb
-      .insert(days)
-      .values(daysInsert)
-      .returning({ id: days.id, name: days.name });
-
-    const exercisesInsert = routine.days
-      .map((d) => d.exercises.map((e) => ({ name: e })))
-      .flat();
-
-    const exercisesReturn = await drizzleDb
-      .insert(exercises)
-      .values(exercisesInsert)
-      .returning({ name: exercises.name, id: exercises.id });
-
-    const daysExercisesInsert = exercisesReturn.map((e) => ({
-      dayId: Number(
-        daysReturn.find((_, i) => routine.days[i].exercises.includes(e.name))
-          ?.id,
-      ),
-      exerciseId: e.id,
-    }));
-
-    const formatNowDate = new Date();
-    const daysExersisesReturn = await drizzleDb
-      .insert(daysExcercises)
-      .values(daysExercisesInsert)
-      .returning({
-        dayExerciseId: daysExcercises.id,
-        exerciseId: daysExcercises.exerciseId,
-      });
-
-    const setsInsert = routine.days.flatMap((d) =>
-      d.exercises.flatMap((de) => {
-        const exerciseId = exercisesReturn.find((e) => e.name === de)?.id;
-
-        const dayExerciseId = daysExersisesReturn.find(
-          (e) => e.exerciseId === exerciseId,
-        )?.dayExerciseId;
-
-        return d.sets.map((s) => ({
-          dayExerciseId: dayExerciseId as number,
-          reps: s.reps as number,
-          weight: s.weight as number,
-          date: formatNowDate,
-        }));
-      }),
-    );
-
-    await drizzleDb.insert(sets).values(setsInsert);
-
-    
-    setIsCompleteGenerateRoutine(true);
-  };
+  // const addRoutineGenerateByIA = async (routine: routineIA) => {
+  //   //console.log("Agregando rutina a DB");
+  //   //console.log(routine);
+  //   const [{ rouId }] = await drizzleDb
+  //     .insert(routines)
+  //     .values({
+  //       name: routine.routinename,
+  //       userId,
+  //     })
+  //     .returning({ rouId: routines.id });
+  //
+  //   const daysInsert = routine.days.map((d: days) => ({
+  //     name: d.name,
+  //     routineId: rouId,
+  //   }));
+  //
+  //   const daysReturn = await drizzleDb
+  //     .insert(days)
+  //     .values(daysInsert)
+  //     .returning({ id: days.id, name: days.name });
+  //
+  //   const exercisesInsert = routine.days
+  //     .map((d) => d.exercises.map((e) => ({ name: e })))
+  //     .flat();
+  //
+  //   const exercisesReturn = await drizzleDb
+  //     .insert(exercises)
+  //     .values(exercisesInsert)
+  //     .returning({ name: exercises.name, id: exercises.id });
+  //
+  //   const daysExercisesInsert = exercisesReturn.map((e) => ({
+  //     dayId: Number(
+  //       daysReturn.find((_, i) => routine.days[i].exercises.includes(e.name))
+  //         ?.id,
+  //     ),
+  //     exerciseId: e.id,
+  //   }));
+  //
+  //   const formatNowDate = new Date();
+  //   const daysExersisesReturn = await drizzleDb
+  //     .insert(daysExcercises)
+  //     .values(daysExercisesInsert)
+  //     .returning({
+  //       dayExerciseId: daysExcercises.id,
+  //       exerciseId: daysExcercises.exerciseId,
+  //     });
+  //
+  //   const setsInsert = routine.days.flatMap((d) =>
+  //     d.exercises.flatMap((de) => {
+  //       const exerciseId = exercisesReturn.find((e) => e.name === de)?.id;
+  //
+  //       const dayExerciseId = daysExersisesReturn.find(
+  //         (e) => e.exerciseId === exerciseId,
+  //       )?.dayExerciseId;
+  //
+  //       return d.sets.map((s) => ({
+  //         dayExerciseId: dayExerciseId as number,
+  //         reps: s.reps as number,
+  //         weight: s.weight as number,
+  //         date: formatNowDate,
+  //       }));
+  //     }),
+  //   );
+  //
+  //   await drizzleDb.insert(sets).values(setsInsert);
+  //
+  //
+  //   setIsCompleteGenerateRoutine(true);
+  // };
 
   const handleCheck = (questionId: number, optionId: number) => {
     setQuestions((questions) =>
@@ -294,11 +292,11 @@ export default function ModalNewRoutine() {
       return;
     }
 
-    await TrainingFacade.addRoutine({
-      name,
-      userId,
-    });
-    
+    // await TrainingFacade.addRoutine({
+    //   name,
+    //   userId,
+    // });
+
     router.back();
   };
 
@@ -340,7 +338,7 @@ export default function ModalNewRoutine() {
 
       if (!payload.choices[0]?.finishReason) {
         try {
-          addRoutineGenerateByIA(JSON.parse(message));
+          //addRoutineGenerateByIA(JSON.parse(message));
           setLoading(false);
         } catch (error) {
           Alert.alert(

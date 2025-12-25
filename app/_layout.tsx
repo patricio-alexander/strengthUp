@@ -2,8 +2,6 @@ import { ThemeProvider } from "@react-navigation/native";
 import Purchases from "react-native-purchases";
 
 import { Stack } from "expo-router";
-import { firestore } from "@/firebaseConfig";
-import { doc, getDoc } from "firebase/firestore";
 import { users, exercises, days, settings } from "@/db/schema";
 import { KeyboardProvider } from "react-native-keyboard-controller";
 import {
@@ -41,16 +39,14 @@ import { Colors } from "@/constants/Colors";
 import { DATABASE_NAME } from "@/constants/db";
 import * as Notifications from "expo-notifications";
 
-import { getAuth } from "firebase/auth";
 import { eq } from "drizzle-orm";
 import { motivationalMessages } from "@/constants/motivationalMessages";
 import { useAppNotifications } from "@/hooks/useAppNotifications";
+import { supabase } from "@/lib/supabase";
 
 const expo = openDatabaseSync(DATABASE_NAME);
 const db = drizzle(expo, { schema });
 // Prevent the splash screen from auto-hiding before asset loading is complete.
-
-
 
 SplashScreen.preventAutoHideAsync();
 
@@ -64,7 +60,8 @@ Notifications.setNotificationHandler({
 });
 
 export default function RootLayout() {
-  const { setUser, setIsPremium, setRole } = useUserStore();
+  const { setUser, setIsPremium, setRole, setSession } = useUserStore();
+
   const { addDailyNotification, addNotificationAtDate, cancelAllNotification } =
     useAppNotifications();
 
@@ -88,224 +85,6 @@ export default function RootLayout() {
   });
 
   //useDrizzleStudio(expo);
-
-  const loadLocalUserData = async () => {
-    try {
-      const exe = await db.select().from(exercises);
-
-      const user = await db.select().from(users);
-
-      // await db.insert(sets).values([
-      //   // Febrero 2025
-      //   {
-      //     dayExerciseId: 113,
-      //     reps: 8,
-      //     weight: 25,
-      //     date: new Date(2025, 1, 5).getTime(),
-      //   },
-      //   {
-      //     dayExerciseId: 113,
-      //     reps: 10,
-      //     weight: 27.5,
-      //     date: new Date(2025, 1, 15).getTime(),
-      //   },
-      //   {
-      //     dayExerciseId: 113,
-      //     reps: 12,
-      //     weight: 30,
-      //     date: new Date(2025, 1, 25).getTime(),
-      //   },
-      //
-      //   // Marzo 2025
-      //   {
-      //     dayExerciseId: 113,
-      //     reps: 10,
-      //     weight: 30,
-      //     date: new Date(2025, 2, 5).getTime(),
-      //   },
-      //   {
-      //     dayExerciseId: 113,
-      //     reps: 8,
-      //     weight: 32.5,
-      //     date: new Date(2025, 2, 15).getTime(),
-      //   },
-      //   {
-      //     dayExerciseId: 113,
-      //     reps: 12,
-      //     weight: 35,
-      //     date: new Date(2025, 2, 25).getTime(),
-      //   },
-      //
-      //   // Abril 2025
-      //   {
-      //     dayExerciseId: 113,
-      //     reps: 12,
-      //     weight: 35,
-      //     date: new Date(2025, 3, 5).getTime(),
-      //   },
-      //   {
-      //     dayExerciseId: 113,
-      //     reps: 10,
-      //     weight: 37.5,
-      //     date: new Date(2025, 3, 15).getTime(),
-      //   },
-      //   {
-      //     dayExerciseId: 113,
-      //     reps: 8,
-      //     weight: 40,
-      //     date: new Date(2025, 3, 25).getTime(),
-      //   },
-      //
-      //   // Mayo 2025
-      //   {
-      //     dayExerciseId: 113,
-      //     reps: 10,
-      //     weight: 25,
-      //     date: new Date(2025, 4, 5).getTime(),
-      //   },
-      //   {
-      //     dayExerciseId: 113,
-      //     reps: 12,
-      //     weight: 27.5,
-      //     date: new Date(2025, 4, 15).getTime(),
-      //   },
-      //   {
-      //     dayExerciseId: 113,
-      //     reps: 8,
-      //     weight: 30,
-      //     date: new Date(2025, 4, 25).getTime(),
-      //   },
-      //
-      //   // Junio 2025
-      //   {
-      //     dayExerciseId: 113,
-      //     reps: 8,
-      //     weight: 30,
-      //     date: new Date(2025, 5, 5).getTime(),
-      //   },
-      //   {
-      //     dayExerciseId: 113,
-      //     reps: 10,
-      //     weight: 32.5,
-      //     date: new Date(2025, 5, 15).getTime(),
-      //   },
-      //   {
-      //     dayExerciseId: 113,
-      //     reps: 12,
-      //     weight: 35,
-      //     date: new Date(2025, 5, 25).getTime(),
-      //   },
-      //
-      //   // Julio 2025
-      //   {
-      //     dayExerciseId: 113,
-      //     reps: 12,
-      //     weight: 35,
-      //     date: new Date(2025, 6, 5).getTime(),
-      //   },
-      //   {
-      //     dayExerciseId: 113,
-      //     reps: 10,
-      //     weight: 37.5,
-      //     date: new Date(2025, 6, 15).getTime(),
-      //   },
-      //   {
-      //     dayExerciseId: 113,
-      //     reps: 8,
-      //     weight: 40,
-      //     date: new Date(2025, 6, 25).getTime(),
-      //   },
-      //
-      //   // Agosto 2025
-      //   {
-      //     dayExerciseId: 113,
-      //     reps: 6,
-      //     weight: 20,
-      //     date: new Date(2025, 7, 5).getTime(),
-      //   },
-      //   {
-      //     dayExerciseId: 113,
-      //     reps: 8,
-      //     weight: 25,
-      //     date: new Date(2025, 7, 15).getTime(),
-      //   },
-      //   {
-      //     dayExerciseId: 113,
-      //     reps: 10,
-      //     weight: 30,
-      //     date: new Date(2025, 7, 25).getTime(),
-      //   },
-      //
-      //   // Septiembre 2025
-      //   {
-      //     dayExerciseId: 113,
-      //     reps: 8,
-      //     weight: 25,
-      //     date: new Date(2025, 8, 5).getTime(),
-      //   },
-      //   {
-      //     dayExerciseId: 113,
-      //     reps: 10,
-      //     weight: 30,
-      //     date: new Date(2025, 8, 15).getTime(),
-      //   },
-      //   {
-      //     dayExerciseId: 113,
-      //     reps: 12,
-      //     weight: 35,
-      //     date: new Date(2025, 8, 25).getTime(),
-      //   },
-      //
-      //   // Octubre 2025
-      //   {
-      //     dayExerciseId: 113,
-      //     reps: 8,
-      //     weight: 30,
-      //     date: new Date(2025, 9, 5).getTime(),
-      //   },
-      //   {
-      //     dayExerciseId: 113,
-      //     reps: 10,
-      //     weight: 32.5,
-      //     date: new Date(2025, 9, 15).getTime(),
-      //   },
-      // ]);
-
-      if (!exe.length) {
-        //await db.insert(exercises).values(defaultExercises);
-      }
-
-      if (!user.length) {
-        setUser({ user: "", userId: 0 });
-
-        return;
-      }
-
-      if (user[0].loggedIn) {
-        setUser({ user: user[0].username, userId: user[0].id });
-        setRole({ role: Role.Personal });
-      }
-    } catch (error) {
-      console.log(error);
-    }
-  };
-
-  const loadRemoteUserData = async (user: any) => {
-    setLoading(true);
-    const docRef = doc(firestore, "coachs", user?.uid);
-    const coachSnap = await getDoc(docRef);
-
-    if (!coachSnap.exists()) {
-      const docRef = doc(firestore, "customers", user?.uid);
-      const personalized = await getDoc(docRef);
-      setRole({ role: personalized.data()?.role });
-      setLoading(false);
-      return;
-    }
-
-    setRole({ role: coachSnap.data()?.role });
-    setLoading(false);
-  };
 
   async function setupNotifications() {
     // Pedir permisos una vez
@@ -378,24 +157,40 @@ export default function RootLayout() {
   }, []);
 
   useEffect(() => {
-    const unsubscribe = getAuth().onAuthStateChanged(async (user) => {
-      if (!success) return;
+    const fetchSession = async () => {
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
 
-      if (user) {
-        await loadRemoteUserData(user);
-        setAppIsReady(true);
-        SplashScreen.hideAsync();
-      } else {
-        setRole({ role: null });
-        setAppIsReady(true);
+      setSession({ session });
 
-        await loadLocalUserData();
-        SplashScreen.hideAsync();
+      if (session) {
+        const { data: user, error } = await supabase
+          .from("users")
+          .select()
+          .eq("id", session.user.id);
+        if (!error) {
+          setAppIsReady(true);
+          console.log(user);
+          return;
+        }
       }
-    });
 
-    return unsubscribe;
-  }, [success]);
+      setAppIsReady(true);
+      SplashScreen.hideAsync();
+    };
+    fetchSession();
+
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((_event, session) => {
+      console.log("Auth state changed:", { event: _event, session });
+      setSession({ session });
+    });
+    return () => {
+      subscription.unsubscribe();
+    };
+  }, []);
 
   const Loading = () => {
     return (
@@ -415,25 +210,19 @@ export default function RootLayout() {
       <StatusBar style="auto" />
 
       <KeyboardProvider statusBarTranslucent>
-        <SQLiteProvider
-          databaseName={DATABASE_NAME}
-          options={{ enableChangeListener: true }}
-          useSuspense
+        <ThemeProvider
+          value={colorScheme === "dark" ? theme.dark : theme.light}
         >
-          <ThemeProvider
-            value={colorScheme === "dark" ? theme.dark : theme.light}
+          <GestureHandlerRootView
+            style={{ backgroundColor: background, flex: 1 }}
           >
-            <GestureHandlerRootView
-              style={{ backgroundColor: background, flex: 1 }}
-            >
-              <Stack
-                screenOptions={{
-                  headerShown: false,
-                }}
-              />
-            </GestureHandlerRootView>
-          </ThemeProvider>
-        </SQLiteProvider>
+            <Stack
+              screenOptions={{
+                headerShown: false,
+              }}
+            />
+          </GestureHandlerRootView>
+        </ThemeProvider>
       </KeyboardProvider>
     </Suspense>
   );

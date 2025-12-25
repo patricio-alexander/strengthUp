@@ -1,4 +1,4 @@
-import { Tabs } from "expo-router";
+import { Redirect, Tabs } from "expo-router";
 import React from "react";
 
 import { HapticTab } from "@/components/HapticTab";
@@ -7,9 +7,14 @@ import { Colors } from "@/constants/Colors";
 import { useColorScheme } from "@/hooks/useColorScheme";
 import { Octicons } from "@expo/vector-icons";
 import SettingsIcon from "@/components/icons/Settings";
+import { useUserStore } from "@/store/userStore";
 
 export default function TabLayout() {
   const colorScheme = useColorScheme();
+  const { session } = useUserStore();
+  if (!session) {
+    return <Redirect href={{ pathname: "/" }} />;
+  }
 
   return (
     <Tabs

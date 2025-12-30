@@ -13,7 +13,7 @@ import { ThemedView } from "@/components/ThemedView";
 const { width, height } = Dimensions.get("window");
 
 export default function ScannerRoutineScreen() {
-  const { userId } = useUserStore();
+  const { user } = useUserStore();
   const scanSize = 300;
   const scanTop = height * 0.3;
   const scanLeft = (width - scanSize) / 2;
@@ -24,7 +24,7 @@ export default function ScannerRoutineScreen() {
 
   const importRoutine = async (code: string) => {
     setLoading(true);
-    await importRoutieFromCatalog({ code, userId });
+    await importRoutieFromCatalog({ code, userId: user?.id });
     setLoading(false);
     router.replace("/personal/(routines)");
   };

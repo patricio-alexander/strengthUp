@@ -35,7 +35,6 @@ export default function AuthScreen() {
   };
 
   if (session) {
-    console.log("redirect");
     return <Redirect href={{ pathname: "/personal" }} />;
   }
 

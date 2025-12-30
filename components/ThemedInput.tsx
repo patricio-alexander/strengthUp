@@ -19,7 +19,6 @@ export const ThemedInput: React.FC<ThemedInputProps> = ({
       style={[
         type === "default" && {
           color: text,
-          height: 50,
           paddingHorizontal: 10,
           fontFamily: "Inter_400Regular",
           backgroundColor: secondary,
@@ -28,7 +27,6 @@ export const ThemedInput: React.FC<ThemedInputProps> = ({
         },
         type === "shadow" && {
           color: text,
-          height: 50,
           fontFamily: "Inter_400Regular",
           backgroundColor: "transparent",
           fontSize: 16,

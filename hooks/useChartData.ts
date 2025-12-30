@@ -2,9 +2,10 @@ import { Filter } from "@/types/filters";
 import { sets } from "@/db/schema";
 import { useEffect, useState } from "react";
 import { setsGroupByMonth, setsGroupByWeek } from "@/utils/sets";
-type SetsTable = typeof sets.$inferSelect;
+import { Set } from "@/types/set";
+import { GroupSetsByDate } from "@/types/groupByDay";
 
-export const useChartData = (range: Filter, sets: SetsTable[]) => {
+export const useChartData = (range: Filter, sets: GroupSetsByDate[]) => {
   const [data, setData] = useState<{ label: string; value: number }[]>([]);
 
   useEffect(() => {
@@ -25,7 +26,7 @@ export const useChartData = (range: Filter, sets: SetsTable[]) => {
     if (range === Filter.SixMonths) {
       start.setMonth(start.getMonth() - 5);
     }
-
+    //
     const filtered = sets.filter((e) => {
       const date = new Date(e.date);
 

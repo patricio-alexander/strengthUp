@@ -1,1 +1,0 @@
-ALTER TABLE `users` ADD `loggedIn` integer DEFAULT true;

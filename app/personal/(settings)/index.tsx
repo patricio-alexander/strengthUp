@@ -1,13 +1,8 @@
 import { ThemedText } from "@/components/ThemedText";
 import { ThemedView } from "@/components/ThemedView";
 import { StyleSheet, View } from "react-native";
-import { Link, router } from "expo-router";
+import { Link } from "expo-router";
 import { Touchable } from "@/components/Touchable";
-import { useSQLiteContext } from "expo-sqlite";
-import { drizzle } from "drizzle-orm/expo-sqlite";
-import { useUserStore } from "@/store/userStore";
-import { users } from "@/db/schema";
-import { eq } from "drizzle-orm";
 import { SettingsElement } from "@/components/SettingsElement";
 import { useState } from "react";
 import DateTimePicker, {
@@ -16,13 +11,12 @@ import DateTimePicker, {
 import { useHourToTrain } from "@/hooks/useHourToTrain";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
-import { useAppNotifications } from "@/hooks/useAppNotifications";
 import { supabase } from "@/lib/supabase";
 
 export default function SettingsScreen() {
-  const { sendInstantNotification } = useAppNotifications();
   const [show, setShow] = useState(false);
-  const { existHour, setHourToTraining, hour } = useHourToTrain();
+
+  const { setHourToTraining, hour } = useHourToTrain();
   const showPicker = () => {
     setShow(true);
   };
@@ -44,18 +38,16 @@ export default function SettingsScreen() {
           <SettingsElement icon="person" title="Usuario" />
         </Link>
 
-        {existHour && (
-          <View>
-            <SettingsElement
-              icon="clock"
-              title="Hora de entrenamiento"
-              onPress={showPicker}
-            />
-            <ThemedText style={{ marginLeft: 26 }}>
-              Actual: {format(new Date(hour), "hh:mm aaa", { locale: es })}
-            </ThemedText>
-          </View>
-        )}
+        <View>
+          <SettingsElement
+            icon="clock"
+            title="Hora de entrenamiento"
+            onPress={showPicker}
+          />
+          <ThemedText style={{ marginLeft: 26 }}>
+            Actual: {hour.slice(0, 5)}
+          </ThemedText>
+        </View>
 
         {show && (
           <DateTimePicker
@@ -66,16 +58,11 @@ export default function SettingsScreen() {
             onChange={async (v: DateTimePickerEvent) => {
               if (v.type === "dismissed") return setShow(false);
 
-              const date = new Date(Number(v.nativeEvent.timestamp));
-              date.setDate(date.getDate() + 1);
-              setShow(false);
-              setHourToTraining(v);
-              await sendInstantNotification({
-                title: "Enhorabuena 🎉",
-                body: "Tu notificación ha sido programada para mañana.",
-              });
+              const date = new Date(v.nativeEvent.timestamp);
+              const f = format(date, "hh:mm", { locale: es });
 
-              // TODO: consultar que ejericio le toca el dia siguiente para poder notificar
+              setShow(false);
+              setHourToTraining(f);
             }}
           />
         )}

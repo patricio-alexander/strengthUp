@@ -1,7 +1,14 @@
-export type Set = {
+// export type Set = {
+//   id: number;
+//   dayExerciseId: number;
+//   reps: number;
+//   weight: number;
+//   date: number;
+// };
+//
+export interface Set {
   id: number;
-  dayExerciseId: number;
-  reps: number;
+  performed_at: string;
   weight: number;
-  date: number;
-};
+  reps: number;
+}

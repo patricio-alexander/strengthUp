@@ -1,37 +1,42 @@
-import { useLiveQuery } from "drizzle-orm/expo-sqlite";
-import { useDrizzleDB } from "./useDrizzleDB";
-import { settings } from "@/db/schema";
-import { DateTimePickerEvent } from "@react-native-community/datetimepicker";
-import { eq } from "drizzle-orm";
+import { useEffect, useState } from "react";
+import { supabase } from "@/lib/supabase";
+import { useUserStore } from "@/store/userStore";
 
 export const useHourToTrain = () => {
-  const drizzleDb = useDrizzleDB();
+  const { user } = useUserStore();
+  const [hour, setHour] = useState("");
 
-  const { data } = useLiveQuery(
-    drizzleDb
-      .select()
-      .from(settings)
-      .where(eq(settings.key, "hour-to-training")),
-  );
+  const fetchHour = async () => {
+    const { data } = await supabase
+      .from("settings")
+      .select("hour_to_train")
+      .eq("user_id", user?.id)
+      .single();
 
-  const setHourToTraining = async (time: DateTimePickerEvent) => {
-    await drizzleDb
-      .insert(settings)
-      .values({
-        key: "hour-to-training",
-        value: time.nativeEvent.timestamp.toString(),
-      })
-      .onConflictDoUpdate({
-        target: settings.key, // la columna que debe ser única
-        set: {
-          value: time.nativeEvent.timestamp.toString(),
-        },
-      });
+    setHour(data?.hour_to_train);
+  };
+
+  useEffect(() => {
+    fetchHour();
+  }, []);
+
+  const setHourToTraining = async (time: string) => {
+    const { data, error } = await supabase
+      .from("settings")
+      .update({ hour_to_train: time })
+      .eq("user_id", user?.id)
+      .select("hour_to_train")
+      .single();
+
+    if (error) {
+      alert(error.message);
+      return;
+    }
+    setHour(data.hour_to_train);
   };
 
   return {
-    existHour: Boolean(data.length),
     setHourToTraining,
-    hour: Number(data[0]?.value),
+    hour,
   };
 };

@@ -42,7 +42,6 @@
           }
         }
       ],
-      "expo-sqlite",
       [
         "expo-build-properties",
         {

@@ -3,13 +3,9 @@ import { ThemedText } from "@/components/ThemedText";
 import { ThemedView } from "@/components/ThemedView";
 import { Link, useLocalSearchParams, useRouter } from "expo-router";
 import { useCallback, useEffect, useState } from "react";
-import { useSQLiteContext } from "expo-sqlite";
-import { drizzle } from "drizzle-orm/expo-sqlite";
-import { days, daysExcercises } from "@/db/schema";
-import { eq, sql } from "drizzle-orm";
 import { NavigationHeader } from "@/components/NavigationHeader";
-type Day = {
-  id: number;
+type WorkoutSessions = {
+  id: string;
   name: string;
   exercisesInDay: number;
 };
@@ -19,45 +15,40 @@ import { IconButton } from "@/components/IconButton";
 import { useColorScheme, View } from "react-native";
 import { Colors } from "@/constants/Colors";
 import { useFocusEffect } from "@react-navigation/native";
+import { supabase } from "@/lib/supabase";
 
-const useRoutineDays = (routineId: number) => {
-  const db = useSQLiteContext();
-  const drizzleDb = drizzle(db);
-  const [listDays, setListDays] = useState<Day[]>([]);
-  const loadDays = async () => {
-    const routineDays = await drizzleDb
-      .select({
-        id: days.id,
-        name: days.name,
-        exercisesInDay: sql<number>`cast(count(${daysExcercises.id}) as int)`,
-      })
-      .from(days)
-      .leftJoin(daysExcercises, eq(days.id, daysExcercises.dayId))
+const useRoutineDays = (routineId: string) => {
+  const [workoutSessions, setWorkoutSessions] = useState<WorkoutSessions[]>([]);
+  const loadWorkoutSessions = async () => {
+    const { data, error } = await supabase
+      .from("workout_sessions")
+      .select(`id, name, workout_sessions_exercises(count) `)
+      .eq("routine_id", routineId);
 
-      .where(eq(days.routineId, routineId))
-      .orderBy(days.sorted)
-      .groupBy(days.id);
-
-    setListDays(routineDays);
+    const workouts = data?.map((w) => ({
+      id: w.id,
+      name: w.name,
+      exercisesInDay: w.workout_sessions_exercises[0].count,
+    }));
+    setWorkoutSessions(workouts ?? []);
   };
 
-  const sort = async (data: Day[]) => {
-    setListDays(data);
+  const sort = async (data: WorkoutSessions[]) => {
     await Promise.all(
-      data.map((item, index) =>
-        drizzleDb
-          .update(days)
-          .set({ sorted: index })
-          .where(eq(days.id, item.id)),
+      data.map((w, index) =>
+        supabase
+          .from("workout_sessions")
+          .update({ sorted: index })
+          .eq("id", w.id),
       ),
     );
   };
 
   useEffect(() => {
-    loadDays();
+    loadWorkoutSessions();
   }, [routineId]);
 
-  return { listDays, loadDays, sort };
+  return { workoutSessions, loadWorkoutSessions, sort };
 };
 
 const useExercisesInDay = (total: number) => {
@@ -79,11 +70,12 @@ export default function RoutineScreen() {
   const [routineName, routineId] = routine;
   const colorScheme = useColorScheme() ?? "light";
   const { tertiary } = Colors[colorScheme];
-  const { listDays, loadDays, sort } = useRoutineDays(Number(routineId));
+  const { workoutSessions, loadWorkoutSessions, sort } =
+    useRoutineDays(routineId);
 
   useFocusEffect(
     useCallback(() => {
-      loadDays();
+      loadWorkoutSessions();
     }, []),
   );
 
@@ -100,14 +92,14 @@ export default function RoutineScreen() {
       <DraggableFlatList
         onDragEnd={({ data }) => sort(data)}
         keyExtractor={(item) => item.id.toString()}
-        extraData={listDays}
+        extraData={workoutSessions}
         contentContainerStyle={{ paddingBottom: 200 }}
         showsVerticalScrollIndicator={false}
-        data={listDays}
+        data={workoutSessions}
         style={{ marginHorizontal: 12 }}
         renderItem={({ item, drag }) => (
           <Link
-            href={`/personal/day/${item.name}/${item.id}`}
+            href={`/personal/workout/${item.name}/${item.id}`}
             asChild
             style={[{ marginBottom: 12 }]}
           >
@@ -127,11 +119,11 @@ export default function RoutineScreen() {
                   size={26}
                   onPress={() => {
                     router.navigate({
-                      pathname: "/personal/new-day",
+                      pathname: "/personal/new-workout-session",
                       params: {
                         routineId,
+                        workoutSessionId: item.id,
                         value: item.name,
-                        dayId: item.id,
                       },
                     });
                   }}
@@ -143,7 +135,7 @@ export default function RoutineScreen() {
       />
       <Link
         href={{
-          pathname: "/personal/new-day",
+          pathname: "/personal/new-workout-session",
           params: {
             routineId,
           },

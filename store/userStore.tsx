@@ -6,12 +6,19 @@ export enum Role {
   Personalized = "personalized",
   Coach = "coach",
 }
+
+type User = {
+  id: string;
+  email: string;
+  username: string;
+  avatar_url: string;
+  role: string;
+};
 //export type Role = "personal" | "personalized" | "coach" | null;
 
 type UserState = {
-  user: string;
-  setUser: ({ user, userId }: { user: string; userId: number }) => void;
-  userId: number;
+  user: User | null;
+  setUser: (user: User) => void;
   isPremium: boolean;
   setIsPremium: ({ premium }: { premium: boolean }) => void;
   role: Role | null;
@@ -23,10 +30,9 @@ type UserState = {
 };
 
 export const useUserStore = create<UserState>()((set) => ({
-  user: "",
-  userId: 0,
+  user: null,
   isPremium: false,
-  setUser: ({ user, userId }) => set({ user, userId }),
+  setUser: (user) => set({ user }),
   setIsPremium: ({ premium }) => set({ isPremium: premium }),
   role: null,
   setRole: ({ role }) => set({ role }),

@@ -1,8 +1,6 @@
-import { sets } from "@/db/schema";
-
-type Sets = typeof sets.$inferSelect;
+import { Set } from "./set";
 
 export interface GroupSetsByDate {
-  date: number;
-  sets: Sets[];
+  date: string;
+  sets: Set[];
 }

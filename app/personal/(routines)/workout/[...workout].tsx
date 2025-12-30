@@ -3,44 +3,40 @@ import { Link, useFocusEffect, useLocalSearchParams } from "expo-router";
 import React, { useCallback } from "react";
 import { ThemedText } from "@/components/ThemedText";
 import { ItemList } from "@/components/ItemList";
-import { SelectedExercise, useRoutineStore } from "@/store/routineStore";
-import { daysExcercises } from "@/db/schema";
 import { NavigationHeader } from "@/components/NavigationHeader";
 import DraggableFlatList from "react-native-draggable-flatlist";
-import { eq } from "drizzle-orm";
 import { IconButton } from "@/components/IconButton";
-import { useDrizzleDB } from "@/hooks/useDrizzleDB";
+import { useSelectedExercises } from "@/hooks/useSelectedExercises";
+import { SelectedExercises } from "@/types/selectedExercises";
+import { supabase } from "@/lib/supabase";
 
 export default function DayScreen() {
-  const { day } = useLocalSearchParams();
-  const drizzleDb = useDrizzleDB();
-  const [dayName, dayId] = day;
+  const { workout } = useLocalSearchParams();
+  const [workoutName, workoutId] = workout;
 
-  const { loadSelectedExercises, selectedExercises, setSelectedExercises } =
-    useRoutineStore();
+  const { selectedExercises, fetchSelectedExercises } =
+    useSelectedExercises(workoutId);
 
-  const sorterInDb = async (data: SelectedExercise[]) => {
-    setSelectedExercises({ data });
-
+  const sort = async (data: SelectedExercises[]) => {
     await Promise.all(
       data.map((item, index) =>
-        drizzleDb
-          .update(daysExcercises)
-          .set({ sorted: index })
-          .where(eq(daysExcercises.id, item.dayExerciseId)),
+        supabase
+          .from("workout_sessions_exercises")
+          .update({ sorted: index })
+          .eq("id", item.workoutSesssionExerciseId),
       ),
     );
   };
 
   useFocusEffect(
     useCallback(() => {
-      loadSelectedExercises({ dayId: Number(dayId) });
+      fetchSelectedExercises();
     }, []),
   );
 
   return (
     <ThemedView>
-      <NavigationHeader title={dayName} />
+      <NavigationHeader title={workoutName} />
       <ThemedText
         style={{ marginBottom: 12, marginHorizontal: 12 }}
         type="defaultSemiBold"
@@ -49,12 +45,12 @@ export default function DayScreen() {
       </ThemedText>
       <DraggableFlatList
         contentContainerStyle={{ paddingBottom: 200 }}
-        onDragEnd={({ data }) => sorterInDb(data)}
+        onDragEnd={({ data }) => sort(data)}
         keyExtractor={(item) => item.id.toString()}
         data={selectedExercises}
         renderItem={({ item, drag }) => (
           <Link
-            href={`/personal/exercise/${item.name}/${item.dayExerciseId}/${item.gifId ?? ""}`}
+            href={`/personal/exercise/${item.name}/${item.workoutSesssionExerciseId}`}
             asChild
             style={{ marginBottom: 12, marginHorizontal: 12 }}
           >
@@ -63,9 +59,12 @@ export default function DayScreen() {
         )}
       />
       <Link
-        href={{pathname: '/list-exercises', params: {
-          dayId
-        }}}
+        href={{
+          pathname: "/list-exercises",
+          params: {
+            workoutId,
+          },
+        }}
         asChild
         style={{
           position: "absolute",

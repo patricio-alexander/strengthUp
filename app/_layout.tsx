@@ -2,7 +2,6 @@ import { ThemeProvider } from "@react-navigation/native";
 import Purchases from "react-native-purchases";
 
 import { Stack } from "expo-router";
-import { users, exercises, days, settings } from "@/db/schema";
 import { KeyboardProvider } from "react-native-keyboard-controller";
 import {
   useFonts,
@@ -21,31 +20,21 @@ import * as SplashScreen from "expo-splash-screen";
 import { StatusBar } from "expo-status-bar";
 import { Suspense, useEffect, useState } from "react";
 import "react-native-reanimated";
-import { drizzle } from "drizzle-orm/expo-sqlite";
-import { SQLiteProvider, openDatabaseSync } from "expo-sqlite";
 
 import { useColorScheme } from "@/hooks/useColorScheme";
 import { ActivityIndicator } from "react-native";
 
-import { useMigrations } from "drizzle-orm/expo-sqlite/migrator";
-import migrations from "@/drizzle/migrations";
-//import { useDrizzleStudio } from "expo-drizzle-studio-plugin";
 import { ThemedView } from "@/components/ThemedView";
 import { Role, useUserStore } from "@/store/userStore";
-import * as schema from "@/db/schema";
 import { theme } from "@/constants/theme";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { Colors } from "@/constants/Colors";
-import { DATABASE_NAME } from "@/constants/db";
 import * as Notifications from "expo-notifications";
 
-import { eq } from "drizzle-orm";
 import { motivationalMessages } from "@/constants/motivationalMessages";
 import { useAppNotifications } from "@/hooks/useAppNotifications";
 import { supabase } from "@/lib/supabase";
 
-const expo = openDatabaseSync(DATABASE_NAME);
-const db = drizzle(expo, { schema });
 // Prevent the splash screen from auto-hiding before asset loading is complete.
 
 SplashScreen.preventAutoHideAsync();
@@ -67,7 +56,6 @@ export default function RootLayout() {
 
   const [isAppReady, setAppIsReady] = useState(false);
 
-  const { success, error } = useMigrations(db, migrations);
   const [loading, setLoading] = useState(false);
 
   const colorScheme = useColorScheme() ?? "light";
@@ -87,54 +75,54 @@ export default function RootLayout() {
   //useDrizzleStudio(expo);
 
   async function setupNotifications() {
-    // Pedir permisos una vez
-    const { status } = await Notifications.requestPermissionsAsync();
-    if (status !== "granted") return;
-
-    const hourToTraing = await db
-      .select()
-      .from(settings)
-      .where(eq(settings.key, "hour-to-training"));
-
-    const date = new Date();
-    const today = date.getDay();
-    // Limpiar notificaciones antiguas
-    await cancelAllNotification();
-
-    let triggeredDate = new Date();
-    if (hourToTraing.length) {
-      triggeredDate = new Date(Number(hourToTraing[0].value));
-    } else {
-      triggeredDate.setHours(3, 0, 0);
-    }
-
-    if (triggeredDate <= date) {
-      triggeredDate.setDate(triggeredDate.getDate() + 1);
-    }
-
-    const exercise = await db.select().from(days).where(eq(days.day, today));
-
-    // 1 Notificación de rutina (si hay ejercicio hoy)
-    if (exercise.length) {
-      //      console.log(format(triggeredDate, "hh:mm"));
-      const { name } = exercise[0]; // Limpiar notificaciones antiguas
-
-      await addNotificationAtDate({
-        title: "¡Hora de entrenar! 💪",
-        body: `Hoy toca ${name} ¡No olvides calentar y dar tu máximo!`,
-        date: triggeredDate,
-      });
-    }
-
-    // 2 Notificación motivacional nocturna
-    const random = Math.floor(Math.random() * motivationalMessages.length);
-
-    await addDailyNotification({
-      title: "Buenas noches 🌙",
-      body: motivationalMessages[random],
-      hour: 18,
-      minute: 0,
-    });
+    // // Pedir permisos una vez
+    // const { status } = await Notifications.requestPermissionsAsync();
+    // if (status !== "granted") return;
+    //
+    // const hourToTraing = await db
+    //   .select()
+    //   .from(settings)
+    //   .where(eq(settings.key, "hour-to-training"));
+    //
+    // const date = new Date();
+    // const today = date.getDay();
+    // // Limpiar notificaciones antiguas
+    // await cancelAllNotification();
+    //
+    // let triggeredDate = new Date();
+    // if (hourToTraing.length) {
+    //   triggeredDate = new Date(Number(hourToTraing[0].value));
+    // } else {
+    //   triggeredDate.setHours(3, 0, 0);
+    // }
+    //
+    // if (triggeredDate <= date) {
+    //   triggeredDate.setDate(triggeredDate.getDate() + 1);
+    // }
+    //
+    // const exercise = await db.select().from(days).where(eq(days.day, today));
+    //
+    // // 1 Notificación de rutina (si hay ejercicio hoy)
+    // if (exercise.length) {
+    //   //      console.log(format(triggeredDate, "hh:mm"));
+    //   const { name } = exercise[0]; // Limpiar notificaciones antiguas
+    //
+    //   await addNotificationAtDate({
+    //     title: "¡Hora de entrenar! 💪",
+    //     body: `Hoy toca ${name} ¡No olvides calentar y dar tu máximo!`,
+    //     date: triggeredDate,
+    //   });
+    // }
+    //
+    // // 2 Notificación motivacional nocturna
+    // const random = Math.floor(Math.random() * motivationalMessages.length);
+    //
+    // await addDailyNotification({
+    //   title: "Buenas noches 🌙",
+    //   body: motivationalMessages[random],
+    //   hour: 18,
+    //   minute: 0,
+    // });
   }
 
   useEffect(() => {
@@ -168,10 +156,12 @@ export default function RootLayout() {
         const { data: user, error } = await supabase
           .from("users")
           .select()
-          .eq("id", session.user.id);
+          .eq("id", session.user.id)
+          .single();
         if (!error) {
           setAppIsReady(true);
-          console.log(user);
+          setUser(user);
+          //console.log(user);
           return;
         }
       }
@@ -184,7 +174,7 @@ export default function RootLayout() {
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((_event, session) => {
-      console.log("Auth state changed:", { event: _event, session });
+      //console.log("Auth state changed:", { event: _event, session });
       setSession({ session });
     });
     return () => {
@@ -201,7 +191,7 @@ export default function RootLayout() {
     );
   };
 
-  if (!loaded || !success || !isAppReady || loading) {
+  if (!loaded || !isAppReady || loading) {
     return <Loading />;
   }
 

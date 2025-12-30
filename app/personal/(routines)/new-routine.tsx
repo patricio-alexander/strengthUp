@@ -4,7 +4,6 @@ import { ThemedText } from "@/components/ThemedText";
 import { ThemedView } from "@/components/ThemedView";
 import { Touchable } from "@/components/Touchable";
 import { useRoutineStore } from "@/store/routineStore";
-import { drizzle } from "drizzle-orm/expo-sqlite";
 import { router } from "expo-router";
 import { useSQLiteContext } from "expo-sqlite";
 import { useEffect, useState } from "react";
@@ -20,7 +19,6 @@ import {
   Alert,
   Linking,
 } from "react-native";
-import { days, daysExcercises, exercises, routines, sets } from "@/db/schema";
 import { useUserStore } from "@/store/userStore";
 import Checkbox from "expo-checkbox";
 import { useMemo } from "react";
@@ -32,7 +30,7 @@ import { Card } from "@/components/Card";
 import { QrCodeScan } from "@/components/icons/QrCode";
 import { useCameraPermissions } from "expo-camera";
 import { importRoutieFromCatalog } from "@/utils/importRoutineFromCatalog";
-import { TrainingFacade } from "@/facades/TrainingFacade";
+import { supabase } from "@/lib/supabase";
 
 type sets = {
   reps: number;
@@ -52,7 +50,7 @@ type routineIA = {
 };
 
 export default function ModalNewRoutine() {
-  const { userId, setIsPremium, isPremium } = useUserStore();
+  const { user, setIsPremium, isPremium } = useUserStore();
 
   const { tint } = useColors();
   const [generateAI, setGenerateAI] = useState(false);
@@ -292,10 +290,7 @@ export default function ModalNewRoutine() {
       return;
     }
 
-    // await TrainingFacade.addRoutine({
-    //   name,
-    //   userId,
-    // });
+    await supabase.from("routines").insert({ name, user_id: user?.id });
 
     router.back();
   };
@@ -306,7 +301,7 @@ export default function ModalNewRoutine() {
 
   const importRoutineInDevice = async () => {
     setImportRoutine(true);
-    await importRoutieFromCatalog({ code: codeRoutine, userId });
+    //await importRoutieFromCatalog({ code: codeRoutine, userId });
 
     setImportRoutine(false);
 

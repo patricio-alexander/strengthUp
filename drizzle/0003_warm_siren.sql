@@ -1,1 +1,0 @@
-ALTER TABLE `days` ADD `sorted` integer;

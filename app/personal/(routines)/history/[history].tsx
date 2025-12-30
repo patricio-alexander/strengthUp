@@ -1,27 +1,25 @@
 import { ThemedView } from "@/components/ThemedView";
 import { ThemedText } from "@/components/ThemedText";
-import { View, FlatList, StyleSheet } from "react-native";
+import { View, FlatList, StyleSheet, Keyboard } from "react-native";
 import { useState } from "react";
 import { HeaderTable } from "@/components/HeaderTable";
 import { ThemedInput } from "@/components/ThemedInput";
 import { IconButton } from "@/components/IconButton";
 import { useLocalSearchParams } from "expo-router";
-import { sets } from "@/db/schema";
-import { eq } from "drizzle-orm";
 import { NavigationHeader } from "@/components/NavigationHeader";
 import { es } from "date-fns/locale";
 import { format } from "date-fns";
 import { KeyboardAwareScrollView } from "react-native-keyboard-controller";
 import { useSetsToEdit } from "@/hooks/useSetsToEdit";
 import { useColors } from "@/hooks/useColors";
-import { useDrizzleDB } from "@/hooks/useDrizzleDB";
-import { useFilteredSets } from "@/hooks/useFilteredSets";
+import { useSets } from "@/hooks/useSets";
+import { FilterSets } from "@/types/filterSets";
+import { supabase } from "@/lib/supabase";
 
 export default function HistoryScreen() {
   const { tint } = useColors();
   const { history } = useLocalSearchParams();
   const [isEdit, setIsEdit] = useState(false);
-  const drizzleDb = useDrizzleDB();
   const [focusInput, setFocusInput] = useState({
     field: "",
     row: 0,
@@ -29,13 +27,21 @@ export default function HistoryScreen() {
   });
 
   const { setsToEdit, updateOnlyValuesToEdit } = useSetsToEdit();
-  const { listSets } = useFilteredSets(Number(history), "past");
+  const { sets, getSets } = useSets(Number(history), FilterSets.past);
 
   const saveChanges = async () => {
-    for (const set of setsToEdit) {
-      await drizzleDb.update(sets).set(set.values).where(eq(sets.id, set.id));
-    }
-    setIsEdit(false);
+    await Promise.all(
+      setsToEdit.map((s) =>
+        supabase.from("exercise_sets").update(s.values).eq("id", s.id),
+      ),
+    )
+      .then(() => {
+        setIsEdit(false);
+      })
+      .finally(() => {
+        Keyboard.dismiss();
+        getSets();
+      });
   };
 
   return (
@@ -46,13 +52,13 @@ export default function HistoryScreen() {
           isEdit && <IconButton name="check" onPress={() => saveChanges()} />
         }
       />
-      {!listSets.length ? (
+      {!sets.length ? (
         <ThemedText style={{ textAlign: "center", marginTop: 20 }}>
           Todavía no hay progreso registrado
         </ThemedText>
       ) : (
         <FlatList
-          data={listSets}
+          data={sets}
           renderScrollComponent={(props) => (
             <KeyboardAwareScrollView {...props} />
           )}
@@ -83,7 +89,7 @@ export default function HistoryScreen() {
                       <View style={Styles.cell}>
                         <ThemedInput
                           style={[
-                            { textAlign: "center", height: 35 },
+                            { textAlign: "center" },
                             focusInput.field === "weight" &&
                               focusInput.row === index &&
                               focusInput.position === position && {
@@ -112,7 +118,7 @@ export default function HistoryScreen() {
                       <View style={Styles.cell}>
                         <ThemedInput
                           style={[
-                            { textAlign: "center", height: 35 },
+                            { textAlign: "center" },
                             focusInput.field === "reps" &&
                               focusInput.row === index &&
                               focusInput.position === position && {

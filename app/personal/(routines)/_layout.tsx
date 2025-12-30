@@ -12,7 +12,7 @@ const RoutineLayout = () => {
         }}
       />
       <Stack.Screen
-        name="new-day"
+        name="new-workout-session"
         options={{
           presentation: "modal",
           animation: "fade_from_bottom",

@@ -2,35 +2,40 @@ import { ThemedInput } from "@/components/ThemedInput";
 import { ThemedText } from "@/components/ThemedText";
 import { ThemedView } from "@/components/ThemedView";
 import { useUserStore } from "@/store/userStore";
-import { StyleSheet, View } from "react-native";
+import { ActivityIndicator, Image, StyleSheet, View } from "react-native";
 import { useState } from "react";
 import { IconButton } from "@/components/IconButton";
-import { useSQLiteContext } from "expo-sqlite";
-import { drizzle } from "drizzle-orm/expo-sqlite";
-import { users } from "@/db/schema";
-import { eq } from "drizzle-orm";
 import { useThemeColor } from "@/hooks/useThemeColor";
 import { NavigationHeader } from "@/components/NavigationHeader";
+import { Touchable } from "@/components/Touchable";
+import { supabase } from "@/lib/supabase";
+import { useColors } from "@/hooks/useColors";
 
 export default function ProfileScreen() {
-  const { user, userId, setUser } = useUserStore();
+  const { tint } = useColors();
+  const { user, setUser } = useUserStore();
   const [edit, setEdit] = useState(false);
   const [value, setValue] = useState("");
-  const db = useSQLiteContext();
-  const drizzleDb = drizzle(db);
   const [success, setSuccess] = useState(false);
   const successColor = useThemeColor({}, "success");
+  const [loading, setLoading] = useState(false);
 
   const changeUsername = async () => {
-    setUser({ user: value, userId });
-    await drizzleDb
-      .update(users)
-      .set({
-        username: value,
-      })
-      .where(eq(users.id, userId));
-    setEdit(false);
+    setLoading(true);
+    const { data, error } = await supabase
+      .from("users")
+      .update({ username: value })
+      .eq("id", user?.id)
+      .select()
+      .single();
+
+    if (error) {
+      alert(error.message);
+      return;
+    }
+    setUser(data);
     setSuccess(true);
+    setLoading(false);
   };
 
   return (
@@ -38,13 +43,21 @@ export default function ProfileScreen() {
       <NavigationHeader
         title="Usuario"
         headerRight={() =>
-          edit && <IconButton name="check" onPress={() => changeUsername()} />
+          !loading ? (
+            edit && <IconButton name="check" onPress={() => changeUsername()} />
+          ) : (
+            <ActivityIndicator size="small" color={tint} />
+          )
         }
       />
+      <View style={styles.imageContainer}>
+        <Image source={{ uri: user?.avatar_url }} style={{ flex: 1 }} />
+      </View>
+      <Touchable type="shadow" title="Cambiar foto" />
       <View style={styles.inputControl}>
         <ThemedText type="defaultSemiBold">Nombre de usuario</ThemedText>
         <ThemedInput
-          defaultValue={user}
+          defaultValue={user?.username}
           onChangeText={(e) => {
             setEdit(true);
             setValue(e);
@@ -63,5 +76,13 @@ export default function ProfileScreen() {
 const styles = StyleSheet.create({
   inputControl: {
     marginHorizontal: 20,
+  },
+  imageContainer: {
+    alignSelf: "center",
+    width: 80,
+    height: 80,
+    borderRadius: 100,
+    overflow: "hidden",
+    marginBottom: 12,
   },
 });

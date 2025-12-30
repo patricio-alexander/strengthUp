@@ -2,10 +2,8 @@ import { Card, CardTitle } from "@/components/Card";
 import { ThemedText } from "@/components/ThemedText";
 import { ThemedView } from "@/components/ThemedView";
 import { useUserStore } from "@/store/userStore";
-import { Octicons } from "@expo/vector-icons";
-import { View, StyleSheet, ScrollView, Alert } from "react-native";
-import { useCallback, useState } from "react";
-import { sets } from "@/db/schema";
+import { View, StyleSheet, ScrollView, Alert, Image } from "react-native";
+import { useCallback, useEffect, useState } from "react";
 import { Link } from "expo-router";
 import { LevelProgressBar } from "@/components/LevelProgressBar";
 import { IconButton } from "@/components/IconButton";
@@ -22,14 +20,12 @@ import { usePerformanceIndex } from "@/hooks/usePerformanceIndex";
 import { useFilters } from "@/hooks/useFilters";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
-import { TrainingFacade } from "@/facades/TrainingFacade";
-import { useLiveQuery } from "drizzle-orm/expo-sqlite";
-import { db } from "@/db/drizzle";
 import { useFocusEffect } from "@react-navigation/native";
-import DateTimePicker, {
-  DateTimePickerEvent,
-} from "@react-native-community/datetimepicker";
 import { useHourToTrain } from "@/hooks/useHourToTrain";
+import { supabase } from "@/lib/supabase";
+import { Set } from "@/types/set";
+import { setsGroupByDay } from "@/utils/sets";
+import { GroupSetsByDate } from "@/types/groupByDay";
 
 const useGreeting = () => {
   const hour = new Date().getHours();
@@ -42,14 +38,14 @@ const useBlockTrain = (day: number) => {
   const [block, setBlock] = useState({ id: 0, name: "" });
   const [exist, setExist] = useState(false);
   const getBlock = async () => {
-    const data = await TrainingFacade.getOneBlock(day);
-
-    if (!data.length) {
-      return setExist(false);
-    }
-    const { name, id } = data[0];
-    setBlock({ name, id });
-    setExist(true);
+    // const data = await TrainingFacade.getOneBlock(day);
+    //
+    // if (!data.length) {
+    //   return setExist(false);
+    // }
+    // const { name, id } = data[0];
+    // setBlock({ name, id });
+    // setExist(true);
   };
 
   useFocusEffect(
@@ -71,17 +67,21 @@ const useDaysInRoutine = (days: number) => {
 };
 
 type Routine = {
-  id: number;
+  id: string;
   name: string | null;
-  daysInRoutine: number;
+  user_id: string;
 };
 
-const useRoutines = (userId: number) => {
-  const [routines, setRoutines] = useState<Routine[] | []>([]);
+const useRoutines = (userId: string | undefined) => {
+  const [routine, setRoutine] = useState<Routine | null>(null);
 
   const getRoutines = async () => {
-    const data = await TrainingFacade.getRoutines(userId);
-    setRoutines(data);
+    const { data } = await supabase
+      .from("routines")
+      .select()
+      .eq("user_id", userId)
+      .single();
+    setRoutine(data ?? null);
   };
 
   useFocusEffect(
@@ -90,27 +90,65 @@ const useRoutines = (userId: number) => {
     }, [userId]),
   );
 
-  return { routines, getRoutines };
+  return { routine, getRoutines };
+};
+
+const useWorkoutSetsData = (userId: string | undefined) => {
+  const [workoutSets, setWorkoutSets] = useState<GroupSetsByDate[]>([]);
+
+  const fetchWorkoutSets = async () => {
+    const { data } = await supabase
+      .from("exercise_sets")
+      .select(
+        `
+          id,
+          reps,
+          weight,
+          performed_at,
+          workout_sessions_exercises(
+            workout_sessions(
+              routines(
+              )
+            )
+          )
+        `,
+      )
+
+      .eq(
+        "workout_sessions_exercises.workout_sessions.routines.user_id",
+        userId,
+      );
+
+    const d = setsGroupByDay(data as Set[]);
+
+    setWorkoutSets(d);
+  };
+
+  useEffect(() => {
+    fetchWorkoutSets();
+  }, []);
+
+  return { workoutSets };
 };
 
 export default function HomeScreen() {
-  const { user, userId } = useUserStore();
-  const { routines, getRoutines } = useRoutines(Number(userId));
+  const { user } = useUserStore();
+  const { routine, getRoutines } = useRoutines(user?.id);
   const { tint, foreground, text, primary, tertiary } = useColors();
   const [visibleIndex, setVisibleIndex] = useState(false);
 
   const [showModalEdit, setShowModalEdit] = useState(false);
   const [routineName, setRoutineName] = useState("");
-  const [routineId, setRoutineId] = useState(0);
+  const [routineId, setRoutineId] = useState<string | undefined>("");
   const [showModalInfo, setShowModalInfo] = useState(false);
+  const { workoutSets } = useWorkoutSetsData(user?.id);
 
-  const { data } = useLiveQuery(db.select().from(sets));
-  //const progressIndex = usePerformanceIndex(data);
+  const progressIndex = usePerformanceIndex(workoutSets);
   //const { block, getBlock, exist } = useBlockTrain(new Date().getDay());
 
-  //const { filters, onChangeFilter, range } = useFilters();
+  const { filters, onChangeFilter, range } = useFilters();
 
-  //const lineChart = useChartData(range, data);
+  const lineChart = useChartData(range, workoutSets);
   const [show, setShow] = useState(false);
   // const { existHour, setHourToTraining } = useHourToTrain();
 
@@ -131,7 +169,7 @@ export default function HomeScreen() {
         {
           text: "Confirmar",
           onPress: async () => {
-            await TrainingFacade.removeRoutine(routineId);
+            //await TrainingFacade.removeRoutine(routineId);
             getRoutines();
             //getBlock();
 
@@ -147,7 +185,7 @@ export default function HomeScreen() {
       return;
     }
 
-    await TrainingFacade.updateRoutine({ name: routineName }, routineId);
+    //await TrainingFacade.updateRoutine({ name: routineName }, routineId);
     await getRoutines();
 
     setShowModalEdit(false);
@@ -159,7 +197,7 @@ export default function HomeScreen() {
         type="defaultSemiBold"
         style={{ marginHorizontal: 12, marginBottom: 12 }}
       >
-        {useGreeting()} {user}
+        {useGreeting()} {user?.username}
       </ThemedText>
       <ScrollView
         contentContainerStyle={{
@@ -168,7 +206,7 @@ export default function HomeScreen() {
           gap: 12,
         }}
       >
-        {Boolean(!routines.length) ? (
+        {Boolean(!routine) ? (
           <Link
             href="/personal/new-routine"
             asChild
@@ -181,10 +219,7 @@ export default function HomeScreen() {
             href={{
               pathname: "/personal/routine/[...routine]",
               params: {
-                routine: [
-                  routines[0]?.name as string,
-                  routines[0]?.id.toString?.(),
-                ],
+                routine: [routine?.name as string, routine?.id as string],
               },
             }}
             asChild
@@ -192,10 +227,10 @@ export default function HomeScreen() {
             <ItemList
               value={() => (
                 <View>
-                  <ThemedText>{routines[0]?.name}</ThemedText>
-                  <ThemedText style={{ color: tertiary }}>
-                    {useDaysInRoutine(routines[0]?.daysInRoutine)}
-                  </ThemedText>
+                  <ThemedText>{routine?.name}</ThemedText>
+                  {/* <ThemedText style={{ color: tertiary }}> */}
+                  {/*   {useDaysInRoutine(routine]?.daysInRoutine)} */}
+                  {/* </ThemedText> */}
                 </View>
               )}
               right={() => (
@@ -203,8 +238,8 @@ export default function HomeScreen() {
                   name="pencil"
                   size={26}
                   onPress={() => {
-                    setRoutineId(routines[0].id);
-                    setRoutineName(routines[0].name ?? "");
+                    setRoutineId(routine?.id);
+                    setRoutineName(routine?.name ?? "");
                     setShowModalEdit(true);
                   }}
                 />
@@ -212,74 +247,6 @@ export default function HomeScreen() {
             />
           </Link>
         )}
-
-        {/* {!existHour && ( */}
-        {/*   <ItemList */}
-        {/*     onPress={showPicker} */}
-        {/*     value={() => { */}
-        {/*       return ( */}
-        {/*         <View> */}
-        {/*           <CardTitle>Establece tu hora de entrenamiento</CardTitle> */}
-        {/*           <View style={styles.cardContent}> */}
-        {/*             <Octicons name="clock" size={20} color={tint} /> */}
-        {/*             <ThemedText> */}
-        {/*               Selecciona la hora a la que entrenas, así podremos */}
-        {/*               recordártelo justo a esa hora. */}
-        {/*             </ThemedText> */}
-        {/*           </View> */}
-        {/*         </View> */}
-        {/*       ); */}
-        {/*     }} */}
-        {/*   /> */}
-        {/* )} */}
-
-        {/* {show && ( */}
-        {/*   <DateTimePicker */}
-        {/*     testID="dateTimePicker" */}
-        {/*     value={new Date()} */}
-        {/*     mode={"time"} */}
-        {/*     is24Hour={false} */}
-        {/*     onChange={(v: DateTimePickerEvent) => { */}
-        {/*       if (v.type === "dismissed") return setShow(false); */}
-        {/*       setShow(false); */}
-        {/*       setHourToTraining(v); */}
-        {/*     }} */}
-        {/*   /> */}
-        {/* )} */}
-
-        {/* {exist ? ( */}
-        {/*   <Link */}
-        {/*     href={{ */}
-        {/*       pathname: "/personal/(routines)/day/[...day]", */}
-        {/*       params: { */}
-        {/*         day: [block.name, block.id], */}
-        {/*       }, */}
-        {/*     }} */}
-        {/*     asChild */}
-        {/*   > */}
-        {/*     <ItemList */}
-        {/*       value={() => { */}
-        {/*         return ( */}
-        {/*           <View> */}
-        {/*             <CardTitle>Bloque ha entrenar (hoy)</CardTitle> */}
-        {/*             <View style={styles.cardContent}> */}
-        {/*               <Octicons name="zap" size={20} color={tint} /> */}
-        {/*               <ThemedText>{block.name}</ThemedText> */}
-        {/*             </View> */}
-        {/*           </View> */}
-        {/*         ); */}
-        {/*       }} */}
-        {/*     /> */}
-        {/*   </Link> */}
-        {/* ) : ( */}
-        {/*   <Card> */}
-        {/*     <CardTitle>Bloque ha entrenar (hoy)</CardTitle> */}
-        {/*     <View style={styles.cardContent}> */}
-        {/*       <Octicons name="zap" size={20} color={tint} /> */}
-        {/*       <ThemedText>No existe bloque asignado para hoy</ThemedText> */}
-        {/*     </View> */}
-        {/*   </Card> */}
-        {/* )} */}
 
         <Card>
           <View
@@ -299,7 +266,7 @@ export default function HomeScreen() {
               onPress={() => setVisibleIndex(true)}
             />
           </View>
-          <LevelProgressBar value={0} />
+          <LevelProgressBar value={progressIndex} />
         </Card>
         <Card>
           <View
@@ -318,36 +285,36 @@ export default function HomeScreen() {
             />
           </View>
 
-          {/* <FilterBar */}
-          {/*   filters={filters} */}
-          {/*   onChange={(key) => onChangeFilter(key)} */}
-          {/* /> */}
-          {/* <View> */}
-          {/*   <LineChart */}
-          {/*     width={260} */}
-          {/*     color={tint} */}
-          {/*     curved */}
-          {/*     initialSpacing={30} */}
-          {/*     areaChart */}
-          {/*     startFillColor={tint} */}
-          {/*     endFillColor={primary} */}
-          {/*     data={lineChart} */}
-          {/*     spacing={80} */}
-          {/*     noOfSections={4} */}
-          {/*     dataPointsColor={text} */}
-          {/*     yAxisColor={foreground} */}
-          {/*     xAxisColor={foreground} */}
-          {/*     xAxisLabelTextStyle={{ */}
-          {/*       fontFamily: "Inter_500Medium", */}
-          {/**/}
-          {/*       color: text, */}
-          {/*     }} */}
-          {/*     yAxisTextStyle={{ */}
-          {/*       fontFamily: "Inter_500Medium", */}
-          {/*       color: text, */}
-          {/*     }} */}
-          {/*   /> */}
-          {/* </View> */}
+          <FilterBar
+            filters={filters}
+            onChange={(key) => onChangeFilter(key)}
+          />
+          <View>
+            <LineChart
+              width={260}
+              color={tint}
+              curved
+              initialSpacing={30}
+              areaChart
+              startFillColor={tint}
+              endFillColor={primary}
+              data={lineChart}
+              spacing={80}
+              noOfSections={4}
+              dataPointsColor={text}
+              yAxisColor={foreground}
+              xAxisColor={foreground}
+              xAxisLabelTextStyle={{
+                fontFamily: "Inter_500Medium",
+
+                color: text,
+              }}
+              yAxisTextStyle={{
+                fontFamily: "Inter_500Medium",
+                color: text,
+              }}
+            />
+          </View>
         </Card>
       </ScrollView>
       <Modal

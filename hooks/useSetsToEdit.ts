@@ -1,5 +1,5 @@
 import { SetModify } from "@/types/setModify";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 
 export const useSetsToEdit = () => {
   const [setsToEdit, setSetsToEdit] = useState<SetModify[]>([]);

@@ -1,59 +1,63 @@
 import { ItemList } from "@/components/ItemList";
 import { ThemedView } from "@/components/ThemedView";
 import { useThemeColor } from "@/hooks/useThemeColor";
-import { useRoutineStore } from "@/store/routineStore";
 import { useEffect, useState } from "react";
 import { FlatList, View, StyleSheet, Alert } from "react-native";
 import { IconButton } from "@/components/IconButton";
 import { ThemedText } from "@/components/ThemedText";
 import { ThemedInput } from "@/components/ThemedInput";
 import { Touchable } from "@/components/Touchable";
-import { useSQLiteContext } from "expo-sqlite";
-import { drizzle } from "drizzle-orm/expo-sqlite";
-import { daysExcercises, exercises } from "@/db/schema";
-import { and, eq } from "drizzle-orm";
-import { sets } from "@/db/schema";
 import { NavigationHeader } from "@/components/NavigationHeader";
 import { isValidName } from "@/helpers/inputValidation";
 import { Modal } from "@/components/Modal";
 import { useLocalSearchParams } from "expo-router";
+import { supabase } from "@/lib/supabase";
+import { Exercises } from "@/types/exercises";
+import { useSelectedExercises } from "@/hooks/useSelectedExercises";
+
+const useExercises = () => {
+  const [exercises, setExercises] = useState<Exercises[]>([]);
+
+  const fetchExercises = async () => {
+    const { data } = await supabase.from("exercises").select();
+
+    if (data) {
+      setExercises(data);
+    }
+  };
+
+  useEffect(() => {
+    fetchExercises();
+  }, []);
+
+  return { exercises, fetchExercises };
+};
 
 export default function ModalAddExercices() {
+  const { workoutId } = useLocalSearchParams<{ workoutId: string }>();
 
-
-  const {dayId} = useLocalSearchParams<{dayId: string}>()
-
-  const currentDayId = Number(dayId)
-  
-  const {
-    selectedExercises,
-    exercises: exercisesStore,
-    loadAllExercises,
-    
-    removeExercise,
-    loadSelectedExercises,
-  } = useRoutineStore();
+  const { exercises, fetchExercises } = useExercises();
+  const { selectedExercises } = useSelectedExercises(workoutId);
 
   const bg = useThemeColor({}, "background");
   const tint = useThemeColor({}, "foreground");
   const [visible, setVisible] = useState(false);
   const [exerciseName, setExerciseName] = useState<string>("");
-  const db = useSQLiteContext();
-  const drizzleDb = drizzle(db);
   const [isEdit, setIsEdit] = useState(false);
   const [exerciseId, setExerciseId] = useState(0);
   const [search, setSearch] = useState("");
 
-  const addNewExerciseInDb = async () => {
+  const addNewExercise = async () => {
     if (!isValidName(exerciseName)) {
       return;
     }
-    await drizzleDb.insert(exercises).values({
+
+    const { data } = await supabase.from("exercises").insert({
       name: exerciseName,
     });
-    setVisible(false);
-    loadAllExercises();
 
+    setVisible(false);
+    fetchExercises();
     setExerciseName("");
   };
 
@@ -64,41 +68,33 @@ export default function ModalAddExercices() {
     setExerciseId(0);
   };
 
-  const updatExerciseFromDb = async () => {
+  const updatExercise = async () => {
     if (!isValidName(exerciseName)) {
       return;
     }
-    await drizzleDb
-      .update(exercises)
-      .set({
-        name: exerciseName,
-      })
-      .where(eq(exercises.id, exerciseId));
+
+    const { error } = await supabase
+      .from("exercises")
+      .update({ name: exerciseName })
+      .eq("id", exerciseId);
 
     setVisible(false);
     setIsEdit(false);
-    loadAllExercises();
+    fetchExercises();
   };
 
   const selectExercise = async ({ exerciseId }: { exerciseId: number }) => {
-    
-    const exist = await drizzleDb
-      .select()
-      .from(daysExcercises)
-      .where(
-        and(
-          eq(daysExcercises.exerciseId, exerciseId),
-          eq(daysExcercises.dayId, currentDayId),
-        ),
-      );
+    const { count: exist } = await supabase
+      .from("workout_sessions_exercises")
+      .select("*", { count: "exact", head: true })
+      .eq("exercise_id", exerciseId)
+      .eq("workout_id", workoutId);
 
-      
-
-    if (!exist.length) {
-      await drizzleDb
-        .insert(daysExcercises)
-        .values({ exerciseId, dayId: currentDayId });
-      return loadSelectedExercises({ dayId: currentDayId });
+    if (!exist) {
+      await supabase
+        .from("workout_sessions_exercises")
+        .insert({ workout_id: workoutId, exercise_id: exerciseId });
+      return;
     }
 
     Alert.alert(
@@ -111,32 +107,23 @@ export default function ModalAddExercices() {
         {
           text: "Aceptar",
           onPress: async () => {
-            await drizzleDb
-              .delete(daysExcercises)
-              .where(
-                and(
-                  eq(daysExcercises.exerciseId, exerciseId),
-                  eq(daysExcercises.dayId, currentDayId),
-                ),
-              );
-
-            await drizzleDb
-              .delete(sets)
-              .where(eq(sets.dayExerciseId, exist[0].id));
-
-            loadSelectedExercises({ dayId: currentDayId });
+            await supabase
+              .from("workout_sessions_exercises")
+              .delete()
+              .eq("exercise_id", exerciseId)
+              .eq("workout_id", workoutId);
           },
         },
       ],
     );
   };
 
-  const filter = exercisesStore.filter(({ name }) =>
+  const filter = exercises.filter(({ name }) =>
     name?.toLocaleUpperCase().includes(search.toUpperCase()),
   );
 
   useEffect(() => {
-    loadAllExercises();
+    //loadAllExercises();
   }, []);
 
   return (
@@ -176,9 +163,7 @@ export default function ModalAddExercices() {
           <Touchable
             title="Guardar"
             disabled={!exerciseName.length}
-            onPress={() =>
-              !isEdit ? addNewExerciseInDb() : updatExerciseFromDb()
-            }
+            onPress={() => (!isEdit ? addNewExercise() : updatExercise())}
           />
         </View>
 
@@ -188,7 +173,7 @@ export default function ModalAddExercices() {
             title="Eliminar"
             disabled={!exerciseName.length}
             onPress={() => {
-              removeExercise({ id: Number(exerciseId) });
+              //removeExercise({ id: Number(exerciseId) });
               setVisible(false);
               setExerciseName("");
               setExerciseId(0);
@@ -197,7 +182,7 @@ export default function ModalAddExercices() {
         )}
       </Modal>
 
-      {!exercisesStore.length ? (
+      {!exercises.length ? (
         <ThemedText style={{ textAlign: "center" }}>
           No hay ejercicios. ¡Agrega uno!
         </ThemedText>

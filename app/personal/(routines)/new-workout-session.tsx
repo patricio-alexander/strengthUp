@@ -3,33 +3,33 @@ import { ThemedInput } from "@/components/ThemedInput";
 import { ThemedText } from "@/components/ThemedText";
 import { ThemedView } from "@/components/ThemedView";
 import { Touchable } from "@/components/Touchable";
-import { drizzle } from "drizzle-orm/expo-sqlite";
-import { useSQLiteContext } from "expo-sqlite";
 import { useEffect, useState } from "react";
 import { Alert, View } from "react-native";
-import { days } from "@/db/schema";
 import { isValidName } from "@/helpers/inputValidation";
 import { useLocalSearchParams, useNavigation } from "expo-router";
-import { eq } from "drizzle-orm";
 import { ThemedCheckBox } from "@/components/ThemedCheckbox";
-import { TrainingFacade } from "@/facades/TrainingFacade";
+import { supabase } from "@/lib/supabase";
 
-const useDayData = (id: number) => {
-  const [day, setDay] = useState<{name: string, d: null | number}>({
+const useWorkoutSession = (id: string) => {
+  const [day, setDay] = useState<{ name: string; d: null | string }>({
     name: "",
     d: null,
   });
 
   useEffect(() => {
-    const getData = async () => {
-      const d = await TrainingFacade.getBlocks(id);
-      if (!d.length) {
-        return;
-      }
-      const { name, day } = d[0];
+    const getOneWorkouSession = async () => {
+      const { data } = await supabase
+        .from("workout_sessions")
+        .select("name, day")
+        .eq("id", id)
+        .single();
+
+      if (!data) return;
+
+      const { name, day } = data;
       setDay({ name, d: day });
     };
-    getData();
+    getOneWorkouSession();
   }, [id]);
 
   return { day };
@@ -47,14 +47,13 @@ export default function NewDayModal() {
     { name: "Sábado", index: 6, check: false },
     { name: "Domingo", index: 0, check: false },
   ]);
-  const db = useSQLiteContext();
-  const drizzleDb = drizzle(db);
-  const { routineId, value, dayId } = useLocalSearchParams<{
+  const { routineId, value, workoutSessionId } = useLocalSearchParams<{
     routineId: string;
     value: string;
-    dayId: string;
+    workoutSessionId: string;
   }>();
-  const { day } = useDayData(Number(dayId));
+
+  const { day } = useWorkoutSession(workoutSessionId);
   const navigation = useNavigation();
 
   useEffect(() => {
@@ -64,17 +63,17 @@ export default function NewDayModal() {
     }
   }, [day]);
 
-  const addDayInDb = async () => {
+  const addWorkoutSession = async () => {
     if (!isValidName(valueInput)) {
       return;
     }
 
     const day = daysWeek.find((day) => day.check);
 
-    await TrainingFacade.addBlock({
+    const { data, error } = await supabase.from("workout_sessions").insert({
       name: valueInput,
-      routineId: Number(routineId),
-      day: day?.index,
+      day: day?.name.toLocaleLowerCase(),
+      routine_id: routineId,
     });
 
     setValueInput("");
@@ -83,17 +82,20 @@ export default function NewDayModal() {
 
   const updateDayInDb = async () => {
     const day = daysWeek.find((day) => day.check);
-    await drizzleDb
-      .update(days)
-      .set({ name: valueInput, day: day?.index })
-      .where(eq(days.id, Number(dayId)));
+    await supabase
+      .from("workout_sessions")
+      .update({ name: valueInput, day: day?.name.toLocaleLowerCase() })
+      .eq("id", workoutSessionId);
+
     navigation.goBack();
   };
 
-  const checkDay = (i: number | null) => {
+  const checkDay = (d: string | null) => {
     setDaysWeek((prev) =>
       prev.map((day) =>
-        day.index === i ? { ...day, check: true } : { ...day, check: false },
+        day.name.toLocaleLowerCase() === d?.toLocaleLowerCase()
+          ? { ...day, check: true }
+          : { ...day, check: false },
       ),
     );
   };
@@ -111,7 +113,10 @@ export default function NewDayModal() {
         {
           text: "Confirmar",
           onPress: async () => {
-            await drizzleDb.delete(days).where(eq(days.id, Number(dayId)));
+            const response = await supabase
+              .from("workout_sessions")
+              .delete()
+              .eq("id", workoutSessionId);
             navigation.goBack();
           },
         },
@@ -144,7 +149,7 @@ export default function NewDayModal() {
                     updateDayInDb();
                     return;
                   }
-                  addDayInDb();
+                  addWorkoutSession();
                 }}
               />
             </View>
@@ -176,7 +181,7 @@ export default function NewDayModal() {
               <ThemedCheckBox
                 key={i}
                 title={name}
-                handleChange={() => checkDay(index)}
+                handleChange={() => checkDay(name)}
                 check={check}
               />
             ))}
@@ -186,7 +191,7 @@ export default function NewDayModal() {
               <ThemedCheckBox
                 key={i}
                 title={name}
-                handleChange={() => checkDay(index)}
+                handleChange={() => checkDay(name)}
                 check={check}
               />
             ))}

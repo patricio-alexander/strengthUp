@@ -3,51 +3,38 @@ import { ThemedInput } from "@/components/ThemedInput";
 import { ThemedText } from "@/components/ThemedText";
 import { ThemedView } from "@/components/ThemedView";
 import { Touchable } from "@/components/Touchable";
-import { Link, useFocusEffect, useLocalSearchParams } from "expo-router";
-import { useCallback, useEffect, useMemo } from "react";
+import { Link, useLocalSearchParams } from "expo-router";
+import { useEffect, useMemo } from "react";
 import OpenAI from "react-native-openai";
 
 import { Keyboard, ScrollView, StyleSheet, View } from "react-native";
 import { useState } from "react";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
-import { sets } from "@/db/schema";
 
 import { NavigationHeader } from "@/components/NavigationHeader";
 import { Modal } from "@/components/Modal";
 import { Card, CardTitle } from "@/components/Card";
-import { BarChart } from "react-native-gifted-charts";
 import { ActivityIndicator } from "react-native";
 import { useColors } from "@/hooks/useColors";
 import { LevelProgressBar } from "@/components/LevelProgressBar";
 import { BlurView } from "expo-blur";
 import Paywall from "react-native-purchases-ui";
 import Markdown from "react-native-markdown-display";
-import { FilterBar } from "@/components/FilterBar";
 import { useUserStore } from "@/store/userStore";
-import { useChartData } from "@/hooks/useChartData";
-import { eq } from "drizzle-orm";
 import { usePerformanceIndex } from "@/hooks/usePerformanceIndex";
-import { useFilters } from "@/hooks/useFilters";
 import { useSetsToEdit } from "@/hooks/useSetsToEdit";
-import { useDrizzleDB } from "@/hooks/useDrizzleDB";
 import { Octicons } from "@expo/vector-icons";
 import { setsGroupByDay } from "@/utils/sets";
-import { TrainingFacade } from "@/facades/TrainingFacade";
-import { useSets } from "@/hooks/useSets";
 import { FilterSets } from "@/types/filterSets";
 import { Remove } from "@/components/icons/Remove";
-type SetsTable = typeof sets.$inferSelect;
-
-interface Sets {
-  date: number;
-  weight: number;
-  reps: number;
-}
+import { useSets } from "@/hooks/useSets";
+import { supabase } from "@/lib/supabase";
+import { Set } from "@/types/set";
 
 interface LastWorkout {
   label: string;
-  sets: Sets[] | [];
+  sets: Set[] | [];
 }
 
 const useLastWorkout = (id: number) => {
@@ -60,17 +47,34 @@ const useLastWorkout = (id: number) => {
 
   useEffect(() => {
     const getLastWorkout = async () => {
-      const data = await TrainingFacade.getLastWorkout(id);
-      if (!data.length) {
+      const date = new Date();
+      date.setDate(date.getDate() - 1);
+
+      const { data, error } = await supabase
+        .from("exercise_sets")
+        .select()
+        .eq("workout_session_exercise_id", id)
+        .lt("performed_at", new Date().toISOString())
+        .limit(30);
+
+      if (!data?.length) {
         return setEmpty(true);
       }
 
-      const sorted = data.sort((a, b) => a.date - b.date);
+      const sorted = data.sort(
+        (a, b) =>
+          new Date(a.performed_at).getTime() -
+          new Date(b.performed_at).getTime(),
+      );
 
       const result = setsGroupByDay(sorted);
 
-      const date = format(new Date(), "MMM dd yyyy", { locale: es });
-      const filter = result.filter((s) => s.label !== date);
+      const today = format(new Date(), "MMM dd yyyy", { locale: es });
+
+      const filter = result.filter(
+        (s) =>
+          format(new Date(s.date), "MMM dd yyyy", { locale: es }) !== today,
+      );
 
       const slice = filter.slice(filter.length - 1);
 
@@ -79,13 +83,15 @@ const useLastWorkout = (id: number) => {
       }
 
       const lastSet = slice.flatMap((m) => ({
-        label: m.label,
-        sets: m.sets.filter((s) => new Date(s.date) < new Date()),
+        label: format(new Date(m.date), "MMM dd yyyy", { locale: es }),
+        sets: m.sets.filter((s) => new Date(s.performed_at) < new Date()),
       }));
+      const [{ label, sets }] = lastSet;
 
+      //
       setLastWorkout({
-        label: lastSet[0].label,
-        sets: lastSet[0].sets,
+        label,
+        sets,
       });
     };
     getLastWorkout();
@@ -95,7 +101,7 @@ const useLastWorkout = (id: number) => {
 };
 
 export default function ExerciseScreen() {
-  const { tint, green, secondary, primary } = useColors();
+  const { tint, green, primary } = useColors();
   const { isPremium } = useUserStore();
 
   const [form, setForm] = useState({ weight: "", reps: "" });
@@ -105,34 +111,35 @@ export default function ExerciseScreen() {
   });
 
   const { exercise } = useLocalSearchParams();
-  const [exerciseName, dayExerciseId] = exercise;
-  const drizzleDb = useDrizzleDB();
+  const [exerciseName, workoutSessionExerciseId] = exercise;
+
   const [visible, setVisible] = useState(false);
 
-  const { sets: setsStore, getSets } = useSets(
-    Number(dayExerciseId),
+  const { sets: setsStore, getSets: getSetsToday } = useSets(
+    Number(workoutSessionExerciseId),
     FilterSets.today,
   );
-  const { sets: allSets } = useSets(Number(dayExerciseId), FilterSets.all);
+  const {
+    sets: allSets,
+    isLoading,
+    getSets: getAllSets,
+  } = useSets(Number(workoutSessionExerciseId), FilterSets.all);
 
   const [isEdit, setIsEdit] = useState(false);
   const [recomendation, setRecomendation] = useState("");
   const [waitRecomendation, setWaitRecomendation] = useState(false);
 
-  const { foreground, text } = useColors();
-  const [loading, setLoading] = useState(true);
+  const { text } = useColors();
 
-  const [listSets, setListSets] = useState<SetsTable[]>([]);
-  const indexPerformance = usePerformanceIndex(listSets);
-  const [isLoadingImage, setIsLoadingImage] = useState(true);
+  const indexPerformance = usePerformanceIndex(allSets);
 
-  const { range, onChangeFilter, filters } = useFilters();
-  const lineData = useChartData(range, listSets);
   const { setsToEdit, updateOnlyValuesToEdit } = useSetsToEdit();
-  const { lastWorkout, empty } = useLastWorkout(Number(dayExerciseId));
+  const { lastWorkout, empty } = useLastWorkout(
+    Number(workoutSessionExerciseId),
+  );
 
   const checkIfProgressSets = lastWorkout.sets.map((s, i) => {
-    if (setsStore.length && setsStore[0].sets[i]) {
+    if (setsStore[0]?.sets.length && setsStore[0]?.sets[i]) {
       return {
         weight: s.weight,
         reps: s.reps,
@@ -177,23 +184,29 @@ export default function ExerciseScreen() {
   };
 
   const saveChanges = async () => {
-    for (const set of setsToEdit) {
-      await drizzleDb.update(sets).set(set.values).where(eq(sets.id, set.id));
-    }
-    setIsEdit(false);
-    getAllExerciseSets();
-    Keyboard.dismiss();
+    await Promise.all(
+      setsToEdit.map((s) =>
+        supabase.from("exercise_sets").update(s.values).eq("id", s.id),
+      ),
+    )
+      .then(() => {
+        setIsEdit(false);
+      })
+      .finally(() => {
+        Keyboard.dismiss();
+        getAllSets();
+        getSetsToday();
+      });
   };
 
   const addNewSet = async () => {
-    await TrainingFacade.addSet({
+    await supabase.from("exercise_sets").insert({
       weight: Number(form.weight.replace(",", ".")),
       reps: Number(form.reps.replace(",", ".")),
-      date: Date.now(),
-      dayExerciseId: Number(dayExerciseId),
+      performed_at: new Date().toISOString(),
+      workout_session_exercise_id: Number(workoutSessionExerciseId),
     });
-    getSets();
-    getAllExerciseSets();
+    getSetsToday();
     resetForm();
     setVisible(false);
   };
@@ -213,8 +226,8 @@ export default function ExerciseScreen() {
     const start = new Date(end);
     start.setDate(start.getDate() - 15);
 
-    const setsCurrent15Days = allSets.filter((s) => {
-      const date = new Date(s.date);
+    const setsCurrent15Days = allSets[0].sets.filter((s) => {
+      const date = new Date(s.performed_at);
       return date >= start && date <= end;
     });
 
@@ -260,22 +273,6 @@ export default function ExerciseScreen() {
     };
   }, [openAI]);
 
-  const getAllExerciseSets = async () => {
-    const listSets = await TrainingFacade.getExercisesSetsToDay(
-      Number(dayExerciseId),
-    );
-
-    setListSets(listSets);
-  };
-
-  useFocusEffect(
-    useCallback(() => {
-      getAllExerciseSets();
-
-      setLoading(false);
-    }, []),
-  );
-
   useEffect(() => {
     const hideSubscription = Keyboard.addListener("keyboardDidHide", () => {
       setFocusInput({ field: "", index: 0 });
@@ -285,6 +282,10 @@ export default function ExerciseScreen() {
       hideSubscription.remove();
     };
   }, []);
+
+  const removeSet = async () => {
+    await getSetsToday();
+  };
 
   return (
     <ThemedView>
@@ -348,7 +349,7 @@ export default function ExerciseScreen() {
         }}
       >
         <ThemedText type="defaultSemiBold">{formatNowDate}</ThemedText>
-        <Link href={`/personal/history/${dayExerciseId}`} asChild>
+        <Link href={`/personal/history/${workoutSessionExerciseId}`} asChild>
           <Touchable type="shadow" title="Entrenamientos previos" />
         </Link>
       </View>
@@ -357,95 +358,91 @@ export default function ExerciseScreen() {
         contentContainerStyle={{ paddingBottom: 200 }}
         showsVerticalScrollIndicator={false}
       >
-        {setsStore.map((item, key) => (
-          <View key={key} style={{ gap: 6 }}>
-            {item.sets.map((item, index) => (
-              <View style={Styles.row} key={index}>
-                <ThemedText type="defaultSemiBold" style={Styles.cell}>
-                  Serie {index + 1}
-                </ThemedText>
-                <View style={Styles.cell}>
-                  <ThemedInput
-                    style={[
-                      { textAlign: "right", paddingRight: 35 },
-                      focusInput.index === index &&
-                        focusInput.field === "weight" && {
-                          borderColor: tint,
-                          borderWidth: 1,
-                        },
-                    ]}
-                    onFocus={() => setFocusInput({ index, field: "weight" })}
-                    defaultValue={item.weight.toString()}
-                    keyboardType="number-pad"
-                    onChangeText={(weight) => {
-                      setIsEdit(true);
-                      updateOnlyValuesToEdit({
-                        setId: item.id,
-                        weight: Number(weight.replace(",", ".")),
-                      });
-                    }}
-                  />
-                  <ThemedText
-                    style={{
-                      position: "absolute",
-                      right: 10,
-                      top: 10,
-                      color: tint,
-                    }}
-                  >
-                    kg
-                  </ThemedText>
-                </View>
-                <View style={Styles.cell}>
-                  <ThemedInput
-                    style={[
-                      { textAlign: "right", paddingRight: 50 },
-                      focusInput.index === index &&
-                        focusInput.field === "reps" && {
-                          borderColor: tint,
-                          borderWidth: 1,
-                        },
-                    ]}
-                    defaultValue={item.reps.toString()}
-                    keyboardType="number-pad"
-                    onFocus={() => setFocusInput({ index, field: "reps" })}
-                    onChangeText={(reps) => {
-                      setIsEdit(true);
-                      updateOnlyValuesToEdit({
-                        setId: item.id,
-                        reps: Number(reps.replace(",", ".")),
-                      });
-                    }}
-                  />
-                  <ThemedText
-                    style={{
-                      position: "absolute",
-                      right: 10,
-                      top: 10,
-                      color: tint,
-                    }}
-                  >
-                    reps
-                  </ThemedText>
-                </View>
-
-                <Remove
-                  style={Styles.cell}
-                  width={30}
-                  height={30}
-                  onPress={async () => {
-                    await TrainingFacade.removeSet(item.id);
-
-                    await getSets();
-                    await getAllExerciseSets();
+        <View style={{ gap: 6 }}>
+          {setsStore[0]?.sets.map((item, index) => (
+            <View style={Styles.row} key={index}>
+              <ThemedText type="defaultSemiBold" style={Styles.cell}>
+                Serie {index + 1}
+              </ThemedText>
+              <View style={Styles.cell}>
+                <ThemedInput
+                  style={[
+                    { textAlign: "right", paddingRight: 35 },
+                    focusInput.index === index &&
+                      focusInput.field === "weight" && {
+                        borderColor: tint,
+                        borderWidth: 1,
+                      },
+                  ]}
+                  onFocus={() => setFocusInput({ index, field: "weight" })}
+                  defaultValue={item.weight.toString()}
+                  keyboardType="number-pad"
+                  onChangeText={(weight) => {
+                    setIsEdit(true);
+                    updateOnlyValuesToEdit({
+                      setId: item.id,
+                      weight: Number(weight.replace(",", ".")),
+                    });
                   }}
                 />
+                <ThemedText
+                  style={{
+                    position: "absolute",
+                    right: 10,
+                    top: 13,
+                    color: tint,
+                  }}
+                >
+                  kg
+                </ThemedText>
               </View>
-            ))}
-          </View>
-        ))}
+              <View style={Styles.cell}>
+                <ThemedInput
+                  style={[
+                    { textAlign: "right", paddingRight: 50 },
+                    focusInput.index === index &&
+                      focusInput.field === "reps" && {
+                        borderColor: tint,
+                        borderWidth: 1,
+                      },
+                  ]}
+                  defaultValue={item.reps.toString()}
+                  keyboardType="number-pad"
+                  onFocus={() => setFocusInput({ index, field: "reps" })}
+                  onChangeText={(reps) => {
+                    setIsEdit(true);
+                    updateOnlyValuesToEdit({
+                      setId: item.id,
+                      reps: Number(reps.replace(",", ".")),
+                    });
+                  }}
+                />
+                <ThemedText
+                  style={{
+                    position: "absolute",
+                    right: 10,
+                    top: 13,
+                    color: tint,
+                  }}
+                >
+                  reps
+                </ThemedText>
+              </View>
+
+              <Remove
+                style={Styles.cell}
+                width={30}
+                height={30}
+                onPress={async () => {
+                  removeSet();
+                }}
+              />
+            </View>
+          ))}
+        </View>
+
         <View>
-          {loading ? (
+          {isLoading ? (
             <ActivityIndicator
               size="large"
               color={tint}
@@ -525,12 +522,6 @@ export default function ExerciseScreen() {
                         </ThemedText>
                       </View>
                     ))}
-                    <ThemedText type="defaultSemiBold">Objetivo</ThemedText>
-                    <ThemedText>
-                      Logra una mejora pequeña, pero constante. Si no puedes
-                      aumentar peso hoy, sube 1 repetición. Tu único rival es tu
-                      última sesión.
-                    </ThemedText>
                   </>
                 )}
               </Card>
@@ -589,75 +580,6 @@ export default function ExerciseScreen() {
               {/*     </View> */}
               {/*   </Card> */}
               {/* )} */}
-              <Card style={{ marginTop: 12 }}>
-                <View
-                  style={{
-                    flexDirection: "row",
-                    justifyContent: "space-between",
-                    alignItems: "center",
-                  }}
-                >
-                  <CardTitle>Volumen</CardTitle>
-                </View>
-                <FilterBar
-                  filters={filters}
-                  onChange={(key) => onChangeFilter(key)}
-                />
-                <BarChart
-                  width={280}
-                  noOfSections={4}
-                  animationDuration={1000}
-                  data={lineData}
-                  frontColor={tint}
-                  barBorderRadius={4}
-                  spacing={40}
-                  initialSpacing={30}
-                  color={tint}
-                  rulesColor={foreground}
-                  yAxisColor={foreground}
-                  xAxisColor={foreground}
-                  xAxisLabelTextStyle={{
-                    fontFamily: "Inter_500Medium",
-                    color: text,
-                  }}
-                  yAxisTextStyle={{
-                    fontFamily: "Inter_500Medium",
-                    color: text,
-                  }}
-                  pointerConfig={{
-                    pointerStripUptoDataPoint: true,
-                    activatePointersDelay: 100,
-                    activatePointersOnLongPress: true,
-                    pointerStripWidth: 2,
-                    pointerStripColor: foreground,
-                    pointerColor: foreground,
-                    strokeDashArray: [2, 5],
-                    autoAdjustPointerLabelPosition: false,
-                    pointerLabelComponent: (item: any) => {
-                      return (
-                        <View
-                          style={{
-                            height: 120,
-                            width: 120,
-                            backgroundColor: secondary,
-                            borderRadius: 4,
-                            justifyContent: "center",
-                            paddingLeft: 16,
-                          }}
-                        >
-                          <ThemedText
-                            type="defaultSemiBold"
-                            style={{ marginBottom: 6 }}
-                          >
-                            {item[0].label}
-                          </ThemedText>
-                          <ThemedText>{item[0].value}</ThemedText>
-                        </View>
-                      );
-                    },
-                  }}
-                />
-              </Card>
             </>
           )}
 

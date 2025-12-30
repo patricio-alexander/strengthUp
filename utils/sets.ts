@@ -1,19 +1,16 @@
-import { sets } from "@/db/schema";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
-type SetsTable = typeof sets.$inferSelect;
+import { Set } from "@/types/set";
+import { GroupSetsByDate } from "@/types/groupByDay";
 
-interface GroupByDay {
-  date: number;
-  weight: number;
-  reps: number;
-}
-
-export const setsGroupByMonth = (sets: SetsTable[]) => {
+export const setsGroupByMonth = (sets: GroupSetsByDate[]) => {
   const months = sets.reduce<Record<string, number[]>>((group, item) => {
     const d = new Date(item.date);
-    const key = format(d, "MMM yyyy", { locale: es });
-    const vol = item.reps * item.weight;
+    const key = d.toISOString();
+    const vol = item.sets.reduce(
+      (acc, curr) => acc + curr.reps * curr.weight,
+      0,
+    );
 
     if (!group[key]) {
       group[key] = [];
@@ -23,14 +20,14 @@ export const setsGroupByMonth = (sets: SetsTable[]) => {
     return group;
   }, {});
 
-  const result = Object.entries(months).map(([label, scores]) => ({
-    label,
+  const result = Object.entries(months).map(([date, scores]) => ({
+    label: format(new Date(date), "MMM yyyy", { locale: es }),
     value: scores.reduce((acc, curr) => acc + curr, 0) / scores.length,
   }));
   return result;
 };
 
-const getWeekStartDay = (d: number) => {
+const getWeekStartDay = (d: string) => {
   const date = new Date(d);
   const day = date.getDay();
 
@@ -41,7 +38,7 @@ const getWeekStartDay = (d: number) => {
   return weekStart.getTime();
 };
 
-export const setsGroupByWeek = (weeksInCurrentMonth: SetsTable[]) => {
+export const setsGroupByWeek = (weeksInCurrentMonth: GroupSetsByDate[]) => {
   const groupByWeek = weeksInCurrentMonth.reduce<Record<string, number[]>>(
     (group, item) => {
       const getDay = getWeekStartDay(item.date);
@@ -49,7 +46,11 @@ export const setsGroupByWeek = (weeksInCurrentMonth: SetsTable[]) => {
       if (!group[getDay]) {
         group[getDay] = [];
       }
-      const vol = item.reps * item.weight;
+      const vol = item.sets.reduce(
+        (acc, curr) => acc + curr.reps * curr.weight,
+        0,
+      );
+
       group[getDay].push(vol);
 
       return group;
@@ -80,27 +81,28 @@ export const setsGroupByWeek = (weeksInCurrentMonth: SetsTable[]) => {
   return result;
 };
 
-export const setsGroupByDay = (data: SetsTable[]) => {
-  const days = data.reduce<Record<string, GroupByDay[]>>((group, item) => {
-    const d = new Date(item.date);
+export const setsGroupByDay = (data: Set[]) => {
+  const days = data.reduce<Record<string, Set[]>>((group, item) => {
+    const d = new Date(item.performed_at);
     d.setHours(0, 0, 0, 0);
-    const key = format(d, "MMM dd yyyy", { locale: es });
-    const { date, reps, weight } = item;
+    const key = d.toISOString();
+    const { performed_at, reps, weight, id } = item;
 
     if (!group[key]) {
       group[key] = [];
     }
     group[key].push({
-      date,
+      performed_at,
       reps,
       weight,
+      id,
     });
 
     return group;
   }, {});
 
-  const result = Object.entries(days).map(([label, sets]) => ({
-    label,
+  const result = Object.entries(days).map(([date, sets]) => ({
+    date,
     sets,
   }));
 

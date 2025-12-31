@@ -14,6 +14,7 @@ import { useLocalSearchParams } from "expo-router";
 import { supabase } from "@/lib/supabase";
 import { Exercises } from "@/types/exercises";
 import { useSelectedExercises } from "@/hooks/useSelectedExercises";
+import { Skeleton } from "@/components/Skeleton";
 
 const useExercises = () => {
   const [exercises, setExercises] = useState<Exercises[]>([]);
@@ -37,7 +38,7 @@ export default function ModalAddExercices() {
   const { workoutId } = useLocalSearchParams<{ workoutId: string }>();
 
   const { exercises, fetchExercises } = useExercises();
-  const { selectedExercises } = useSelectedExercises(workoutId);
+  const { selectedExercises, isLoading } = useSelectedExercises(workoutId);
 
   const bg = useThemeColor({}, "background");
   const tint = useThemeColor({}, "foreground");
@@ -52,7 +53,7 @@ export default function ModalAddExercices() {
       return;
     }
 
-    const { data } = await supabase.from("exercises").insert({
+    await supabase.from("exercises").insert({
       name: exerciseName,
     });
 
@@ -122,10 +123,6 @@ export default function ModalAddExercices() {
     name?.toLocaleUpperCase().includes(search.toUpperCase()),
   );
 
-  useEffect(() => {
-    //loadAllExercises();
-  }, []);
-
   return (
     <ThemedView>
       <NavigationHeader
@@ -181,8 +178,19 @@ export default function ModalAddExercices() {
           />
         )}
       </Modal>
-
-      {!exercises.length ? (
+      {isLoading ? (
+        <View style={{ marginHorizontal: 12, gap: 12 }}>
+          <Skeleton isLoading={isLoading}>
+            <ItemList value="" />
+          </Skeleton>
+          <Skeleton isLoading={isLoading}>
+            <ItemList value="" />
+          </Skeleton>
+          <Skeleton isLoading={isLoading}>
+            <ItemList value="" />
+          </Skeleton>
+        </View>
+      ) : !exercises.length ? (
         <ThemedText style={{ textAlign: "center" }}>
           No hay ejercicios. ¡Agrega uno!
         </ThemedText>

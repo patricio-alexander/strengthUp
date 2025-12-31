@@ -2,7 +2,7 @@ import { Card, CardTitle } from "@/components/Card";
 import { ThemedText } from "@/components/ThemedText";
 import { ThemedView } from "@/components/ThemedView";
 import { useUserStore } from "@/store/userStore";
-import { View, StyleSheet, ScrollView, Alert, Image } from "react-native";
+import { View, StyleSheet, ScrollView, Alert, Text } from "react-native";
 import { useCallback, useEffect, useState } from "react";
 import { Link } from "expo-router";
 import { LevelProgressBar } from "@/components/LevelProgressBar";
@@ -21,11 +21,12 @@ import { useFilters } from "@/hooks/useFilters";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
 import { useFocusEffect } from "@react-navigation/native";
-import { useHourToTrain } from "@/hooks/useHourToTrain";
 import { supabase } from "@/lib/supabase";
 import { Set } from "@/types/set";
 import { setsGroupByDay } from "@/utils/sets";
 import { GroupSetsByDate } from "@/types/groupByDay";
+import { Octicons } from "@expo/vector-icons";
+import { Skeleton } from "@/components/Skeleton";
 
 const useGreeting = () => {
   const hour = new Date().getHours();
@@ -34,29 +35,38 @@ const useGreeting = () => {
   return "Buenas noches";
 };
 
-const useBlockTrain = (day: number) => {
+const useWorkoutToTrain = (day: string, routineId: number | undefined) => {
   const [block, setBlock] = useState({ id: 0, name: "" });
   const [exist, setExist] = useState(false);
+  const [isLoadingWorkout, setIsLoadingWorkout] = useState(true);
   const getBlock = async () => {
-    // const data = await TrainingFacade.getOneBlock(day);
-    //
-    // if (!data.length) {
-    //   return setExist(false);
-    // }
-    // const { name, id } = data[0];
-    // setBlock({ name, id });
-    // setExist(true);
+    const { data } = await supabase
+      .from("workout_sessions")
+      .select("id, name")
+      .eq("routine_id", routineId)
+      .eq("day", day)
+      .single();
+
+    if (!data) {
+      setIsLoadingWorkout(false);
+      return setExist(false);
+    }
+    const { name, id } = data;
+    setBlock({ name, id });
+    setExist(true);
+    setIsLoadingWorkout(false);
   };
 
-  useFocusEffect(
-    useCallback(() => {
+  useEffect(() => {
+    if (routineId) {
       getBlock();
-    }, [day]),
-  );
-  return { block, getBlock, exist };
+    }
+  }, [day, routineId]);
+
+  return { block, getBlock, exist, isLoadingWorkout };
 };
 
-const useDaysInRoutine = (days: number) => {
+const useDaysInRoutine = (days: number | undefined) => {
   if (days === 0) {
     return "0 días de entrenamiento";
   }
@@ -70,6 +80,7 @@ type Routine = {
   id: string;
   name: string | null;
   user_id: string;
+  countWorkoutSessions: number;
 };
 
 const useRoutines = (userId: string | undefined) => {
@@ -78,10 +89,22 @@ const useRoutines = (userId: string | undefined) => {
   const getRoutines = async () => {
     const { data } = await supabase
       .from("routines")
-      .select()
+      .select(
+        `
+          id,
+          user_id,
+          name,
+          workout_sessions(count)
+        `,
+      )
       .eq("user_id", userId)
       .single();
-    setRoutine(data ?? null);
+    setRoutine({
+      id: data?.id,
+      name: data?.name,
+      user_id: data?.user_id,
+      countWorkoutSessions: data?.workout_sessions[0].count ?? 0,
+    });
   };
 
   useFocusEffect(
@@ -134,6 +157,7 @@ const useWorkoutSetsData = (userId: string | undefined) => {
 export default function HomeScreen() {
   const { user } = useUserStore();
   const { routine, getRoutines } = useRoutines(user?.id);
+
   const { tint, foreground, text, primary, tertiary } = useColors();
   const [visibleIndex, setVisibleIndex] = useState(false);
 
@@ -144,7 +168,11 @@ export default function HomeScreen() {
   const { workoutSets } = useWorkoutSetsData(user?.id);
 
   const progressIndex = usePerformanceIndex(workoutSets);
-  //const { block, getBlock, exist } = useBlockTrain(new Date().getDay());
+  const day = format(new Date(), "eeee", { locale: es });
+  const { block, getBlock, exist, isLoadingWorkout } = useWorkoutToTrain(
+    day,
+    routine?.id,
+  );
 
   const { filters, onChangeFilter, range } = useFilters();
 
@@ -199,6 +227,7 @@ export default function HomeScreen() {
       >
         {useGreeting()} {user?.username}
       </ThemedText>
+
       <ScrollView
         contentContainerStyle={{
           paddingBottom: 100,
@@ -206,116 +235,156 @@ export default function HomeScreen() {
           gap: 12,
         }}
       >
-        {Boolean(!routine) ? (
-          <Link
-            href="/personal/new-routine"
-            asChild
-            style={{ marginHorizontal: 0 }}
-          >
-            <Touchable title="Agregar entrenamiento" icon="plus" />
-          </Link>
-        ) : (
-          <Link
-            href={{
-              pathname: "/personal/routine/[...routine]",
-              params: {
-                routine: [routine?.name as string, routine?.id as string],
-              },
-            }}
-            asChild
-          >
-            <ItemList
-              value={() => (
-                <View>
-                  <ThemedText>{routine?.name}</ThemedText>
-                  {/* <ThemedText style={{ color: tertiary }}> */}
-                  {/*   {useDaysInRoutine(routine]?.daysInRoutine)} */}
-                  {/* </ThemedText> */}
-                </View>
-              )}
-              right={() => (
-                <IconButton
-                  name="pencil"
-                  size={26}
-                  onPress={() => {
-                    setRoutineId(routine?.id);
-                    setRoutineName(routine?.name ?? "");
-                    setShowModalEdit(true);
-                  }}
-                />
-              )}
-            />
-          </Link>
-        )}
-
-        <Card>
-          <View
-            style={{
-              flexDirection: "row",
-              alignItems: "center",
-              justifyContent: "space-between",
-              gap: 8,
-            }}
-          >
-            <CardTitle style={{ width: "90%", marginBottom: 8 }}>
-              Rendimiento con respecto a la semana anterior
-            </CardTitle>
-            <IconButton
-              name="info"
-              size={18}
-              onPress={() => setVisibleIndex(true)}
-            />
-          </View>
-          <LevelProgressBar value={progressIndex} />
-        </Card>
-        <Card>
-          <View
-            style={{
-              flexDirection: "row",
-              alignItems: "center",
-              justifyContent: "space-between",
-              gap: 8,
-            }}
-          >
-            <CardTitle>Progreso general</CardTitle>
-            <IconButton
-              name="info"
-              size={18}
-              onPress={() => setShowModalInfo(true)}
-            />
-          </View>
-
-          <FilterBar
-            filters={filters}
-            onChange={(key) => onChangeFilter(key)}
-          />
-          <View>
-            <LineChart
-              width={260}
-              color={tint}
-              curved
-              initialSpacing={30}
-              areaChart
-              startFillColor={tint}
-              endFillColor={primary}
-              data={lineChart}
-              spacing={80}
-              noOfSections={4}
-              dataPointsColor={text}
-              yAxisColor={foreground}
-              xAxisColor={foreground}
-              xAxisLabelTextStyle={{
-                fontFamily: "Inter_500Medium",
-
-                color: text,
+        <Skeleton isLoading={isLoadingWorkout}>
+          {Boolean(!routine) ? (
+            <Link
+              href="/personal/new-routine"
+              asChild
+              style={{ marginHorizontal: 0 }}
+            >
+              <Touchable title="Agregar entrenamiento" icon="plus" />
+            </Link>
+          ) : (
+            <Link
+              href={{
+                pathname: "/personal/routine/[...routine]",
+                params: {
+                  routine: [routine?.name as string, routine?.id as string],
+                },
               }}
-              yAxisTextStyle={{
-                fontFamily: "Inter_500Medium",
-                color: text,
+              asChild
+            >
+              <ItemList
+                value={() => (
+                  <View>
+                    <ThemedText>{routine?.name}</ThemedText>
+                    <ThemedText style={{ color: tertiary }}>
+                      {useDaysInRoutine(routine?.countWorkoutSessions)}
+                    </ThemedText>
+                  </View>
+                )}
+                right={() => (
+                  <IconButton
+                    name="pencil"
+                    size={26}
+                    onPress={() => {
+                      setRoutineId(routine?.id);
+                      setRoutineName(routine?.name ?? "");
+                      setShowModalEdit(true);
+                    }}
+                  />
+                )}
+              />
+            </Link>
+          )}
+        </Skeleton>
+        <Skeleton isLoading={isLoadingWorkout}>
+          {exist ? (
+            <Link
+              href={{
+                pathname: "/personal/workout/[...workout]",
+                params: {
+                  workout: [block.name, block.id],
+                },
               }}
+              asChild
+            >
+              <ItemList
+                value={() => {
+                  return (
+                    <View>
+                      <CardTitle>Entrenamiento para hoy</CardTitle>
+                      <View style={styles.cardContent}>
+                        <Octicons name="zap" size={20} color={tint} />
+                        <ThemedText>{block.name}</ThemedText>
+                      </View>
+                    </View>
+                  );
+                }}
+              />
+            </Link>
+          ) : (
+            <Card>
+              <CardTitle>Bloque ha entrenar (hoy)</CardTitle>
+              <View style={styles.cardContent}>
+                <Octicons name="zap" size={20} color={tint} />
+                <ThemedText>No existe entrenamiento para hoy</ThemedText>
+              </View>
+            </Card>
+          )}
+        </Skeleton>
+        <Skeleton isLoading={isLoadingWorkout}>
+          <Card>
+            <View
+              style={{
+                flexDirection: "row",
+                alignItems: "center",
+                justifyContent: "space-between",
+                gap: 8,
+              }}
+            >
+              <CardTitle style={{ width: "90%", marginBottom: 8 }}>
+                Rendimiento con respecto a la semana anterior
+              </CardTitle>
+              <IconButton
+                name="info"
+                size={18}
+                onPress={() => setVisibleIndex(true)}
+              />
+            </View>
+            <LevelProgressBar value={progressIndex} />
+          </Card>
+        </Skeleton>
+        <Skeleton isLoading={isLoadingWorkout}>
+          <Card>
+            <View
+              style={{
+                flexDirection: "row",
+                alignItems: "center",
+                justifyContent: "space-between",
+                gap: 8,
+              }}
+            >
+              <CardTitle>Progreso general</CardTitle>
+              <IconButton
+                name="info"
+                size={18}
+                onPress={() => setShowModalInfo(true)}
+              />
+            </View>
+
+            <FilterBar
+              filters={filters}
+              onChange={(key) => onChangeFilter(key)}
             />
-          </View>
-        </Card>
+            <View>
+              <LineChart
+                width={260}
+                color={tint}
+                curved
+                initialSpacing={30}
+                areaChart
+                startFillColor={tint}
+                endFillColor={primary}
+                data={lineChart}
+                spacing={80}
+                noOfSections={4}
+                dataPointsColor={text}
+                yAxisColor={foreground}
+                xAxisColor={foreground}
+                xAxisLabelTextStyle={{
+                  fontFamily: "Inter_500Medium",
+
+                  color: text,
+                }}
+                yAxisTextStyle={{
+                  fontFamily: "Inter_500Medium",
+                  color: text,
+                }}
+              />
+            </View>
+          </Card>
+        </Skeleton>
       </ScrollView>
       <Modal
         visible={visibleIndex}

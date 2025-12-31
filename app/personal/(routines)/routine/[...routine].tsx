@@ -16,9 +16,11 @@ import { useColorScheme, View } from "react-native";
 import { Colors } from "@/constants/Colors";
 import { useFocusEffect } from "@react-navigation/native";
 import { supabase } from "@/lib/supabase";
+import { Skeleton } from "@/components/Skeleton";
 
 const useRoutineDays = (routineId: string) => {
   const [workoutSessions, setWorkoutSessions] = useState<WorkoutSessions[]>([]);
+  const [isLoading, setLoading] = useState(true);
   const loadWorkoutSessions = async () => {
     const { data, error } = await supabase
       .from("workout_sessions")
@@ -31,6 +33,7 @@ const useRoutineDays = (routineId: string) => {
       exercisesInDay: w.workout_sessions_exercises[0].count,
     }));
     setWorkoutSessions(workouts ?? []);
+    setLoading(false);
   };
 
   const sort = async (data: WorkoutSessions[]) => {
@@ -48,7 +51,7 @@ const useRoutineDays = (routineId: string) => {
     loadWorkoutSessions();
   }, [routineId]);
 
-  return { workoutSessions, loadWorkoutSessions, sort };
+  return { workoutSessions, loadWorkoutSessions, sort, isLoading };
 };
 
 const useExercisesInDay = (total: number) => {
@@ -70,7 +73,7 @@ export default function RoutineScreen() {
   const [routineName, routineId] = routine;
   const colorScheme = useColorScheme() ?? "light";
   const { tertiary } = Colors[colorScheme];
-  const { workoutSessions, loadWorkoutSessions, sort } =
+  const { workoutSessions, loadWorkoutSessions, sort, isLoading } =
     useRoutineDays(routineId);
 
   useFocusEffect(
@@ -88,51 +91,79 @@ export default function RoutineScreen() {
       >
         Bloques
       </ThemedText>
-
-      <DraggableFlatList
-        onDragEnd={({ data }) => sort(data)}
-        keyExtractor={(item) => item.id.toString()}
-        extraData={workoutSessions}
-        contentContainerStyle={{ paddingBottom: 200 }}
-        showsVerticalScrollIndicator={false}
-        data={workoutSessions}
-        style={{ marginHorizontal: 12 }}
-        renderItem={({ item, drag }) => (
-          <Link
-            href={`/personal/workout/${item.name}/${item.id}`}
-            asChild
-            style={[{ marginBottom: 12 }]}
-          >
+      {isLoading ? (
+        <View style={{ marginHorizontal: 12, gap: 12 }}>
+          <Skeleton isLoading={isLoading}>
             <ItemList
-              value={() => (
-                <View>
-                  <ThemedText>{item.name}</ThemedText>
-                  <ThemedText style={{ color: tertiary }}>
-                    {useExercisesInDay(item.exercisesInDay)}
-                  </ThemedText>
-                </View>
-              )}
-              onTouchMove={drag}
-              right={() => (
-                <IconButton
-                  name="kebab-horizontal"
-                  size={26}
-                  onPress={() => {
-                    router.navigate({
-                      pathname: "/personal/new-workout-session",
-                      params: {
-                        routineId,
-                        workoutSessionId: item.id,
-                        value: item.name,
-                      },
-                    });
-                  }}
-                />
-              )}
+              value={() => {
+                return (
+                  <View>
+                    <ThemedText />
+                    <ThemedText />
+                  </View>
+                );
+              }}
             />
-          </Link>
-        )}
-      />
+          </Skeleton>
+          <Skeleton isLoading={isLoading}>
+            <ItemList
+              value={() => {
+                return (
+                  <View>
+                    <ThemedText />
+                    <ThemedText />
+                  </View>
+                );
+              }}
+            />
+          </Skeleton>
+        </View>
+      ) : (
+        <DraggableFlatList
+          onDragEnd={({ data }) => sort(data)}
+          keyExtractor={(item) => item.id.toString()}
+          extraData={workoutSessions}
+          contentContainerStyle={{ paddingBottom: 200 }}
+          showsVerticalScrollIndicator={false}
+          data={workoutSessions}
+          style={{ marginHorizontal: 12 }}
+          renderItem={({ item, drag }) => (
+            <Link
+              href={`/personal/workout/${item.name}/${item.id}`}
+              asChild
+              style={[{ marginBottom: 12 }]}
+            >
+              <ItemList
+                value={() => (
+                  <View>
+                    <ThemedText>{item.name}</ThemedText>
+                    <ThemedText style={{ color: tertiary }}>
+                      {useExercisesInDay(item.exercisesInDay)}
+                    </ThemedText>
+                  </View>
+                )}
+                onTouchMove={drag}
+                right={() => (
+                  <IconButton
+                    name="kebab-horizontal"
+                    size={26}
+                    onPress={() => {
+                      router.navigate({
+                        pathname: "/personal/new-workout-session",
+                        params: {
+                          routineId,
+                          workoutSessionId: item.id,
+                          value: item.name,
+                        },
+                      });
+                    }}
+                  />
+                )}
+              />
+            </Link>
+          )}
+        />
+      )}
       <Link
         href={{
           pathname: "/personal/new-workout-session",

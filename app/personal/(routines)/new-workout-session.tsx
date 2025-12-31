@@ -127,7 +127,7 @@ export default function NewDayModal() {
   return (
     <ThemedView>
       <NavigationHeader
-        title={value ? "Editar día" : "Agregar bloque"}
+        title={value ? "Editar entrenamiento" : "Agregar entrenamiento"}
         headerRight={() =>
           Boolean(valueInput?.length) &&
           daysWeek.some((day) => day.check) && (
@@ -165,16 +165,14 @@ export default function NewDayModal() {
             alignItems: "center",
           }}
         >
-          <ThemedText type="defaultSemiBold">Nombre del bloque</ThemedText>
+          <ThemedText type="defaultSemiBold">Nombre</ThemedText>
         </View>
         <ThemedInput
           placeholder="Ej: Push A, Pull B, Piernas"
           value={valueInput}
           onChangeText={setValueInput}
         />
-        <ThemedText type="defaultSemiBold">
-          ¿Qué día entrenarás este bloque?
-        </ThemedText>
+        <ThemedText type="defaultSemiBold">¿Qué día entrenarás?</ThemedText>
         <View style={{ flexDirection: "row", justifyContent: "space-around" }}>
           <View style={{ gap: 10 }}>
             {daysWeek.slice(0, 4).map(({ name, check, index }, i) => (

@@ -9,12 +9,14 @@ import { IconButton } from "@/components/IconButton";
 import { useSelectedExercises } from "@/hooks/useSelectedExercises";
 import { SelectedExercises } from "@/types/selectedExercises";
 import { supabase } from "@/lib/supabase";
+import { Skeleton } from "@/components/Skeleton";
+import { View } from "react-native";
 
 export default function DayScreen() {
   const { workout } = useLocalSearchParams();
   const [workoutName, workoutId] = workout;
 
-  const { selectedExercises, fetchSelectedExercises } =
+  const { selectedExercises, isLoading, fetchSelectedExercises } =
     useSelectedExercises(workoutId);
 
   const sort = async (data: SelectedExercises[]) => {
@@ -43,21 +45,37 @@ export default function DayScreen() {
       >
         Ejercicios
       </ThemedText>
-      <DraggableFlatList
-        contentContainerStyle={{ paddingBottom: 200 }}
-        onDragEnd={({ data }) => sort(data)}
-        keyExtractor={(item) => item.id.toString()}
-        data={selectedExercises}
-        renderItem={({ item, drag }) => (
-          <Link
-            href={`/personal/exercise/${item.name}/${item.workoutSesssionExerciseId}`}
-            asChild
-            style={{ marginBottom: 12, marginHorizontal: 12 }}
-          >
-            <ItemList value={item.name} onTouchMove={drag} />
-          </Link>
-        )}
-      />
+
+      {isLoading ? (
+        <View style={{ marginHorizontal: 12, gap: 12 }}>
+          <Skeleton isLoading={isLoading}>
+            <ItemList value="" />
+          </Skeleton>
+          <Skeleton isLoading={isLoading}>
+            <ItemList value="" />
+          </Skeleton>
+          <Skeleton isLoading={isLoading}>
+            <ItemList value="" />
+          </Skeleton>
+        </View>
+      ) : (
+        <DraggableFlatList
+          contentContainerStyle={{ paddingBottom: 200 }}
+          onDragEnd={({ data }) => sort(data)}
+          keyExtractor={(item) => item.id.toString()}
+          data={selectedExercises}
+          renderItem={({ item, drag }) => (
+            <Link
+              href={`/personal/exercise/${item.name}/${item.workoutSesssionExerciseId}`}
+              asChild
+              style={{ marginBottom: 12, marginHorizontal: 12 }}
+            >
+              <ItemList value={item.name} onTouchMove={drag} />
+            </Link>
+          )}
+        />
+      )}
+
       <Link
         href={{
           pathname: "/list-exercises",

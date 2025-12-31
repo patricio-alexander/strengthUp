@@ -7,6 +7,8 @@ export const useSelectedExercises = (workoutId: string) => {
     SelectedExercises[]
   >([]);
 
+  const [isLoading, setIsLoading] = useState(true);
+
   const fetchSelectedExercises = async () => {
     const { data, error } = await supabase
       .from("workout_sessions_exercises")
@@ -19,6 +21,7 @@ export const useSelectedExercises = (workoutId: string) => {
       )
       .eq("workout_id", workoutId)
       .order("sorted", { ascending: true });
+    console.log(data);
 
     const selected = data?.map((e) => ({
       id: e.exercises.exercise_id,
@@ -27,11 +30,12 @@ export const useSelectedExercises = (workoutId: string) => {
     }));
 
     setSelectedExercises(selected ?? []);
+    setIsLoading(false);
   };
 
   useEffect(() => {
     fetchSelectedExercises();
   }, []);
 
-  return { selectedExercises, fetchSelectedExercises };
+  return { selectedExercises, fetchSelectedExercises, isLoading };
 };

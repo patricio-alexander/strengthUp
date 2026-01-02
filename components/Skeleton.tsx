@@ -14,7 +14,11 @@ interface SkeletonProps {
   style?: StyleProp<ViewStyle>;
 }
 
-export const Skeleton = ({ isLoading, children, style }: SkeletonProps) => {
+export const Skeleton = ({
+  isLoading = true,
+  children,
+  style,
+}: SkeletonProps) => {
   const { tertiary } = useColors();
   const opacity = useSharedValue<number>(0.3);
 

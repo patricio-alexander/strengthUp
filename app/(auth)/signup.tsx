@@ -10,12 +10,14 @@ import { ThemedInput } from "@/components/ThemedInput";
 import { PasswordInput } from "@/components/PasswordInput";
 import { useColors } from "@/hooks/useColors";
 import { Form } from "@/types/form";
+import { supabase } from "@/lib/supabase";
+import { router } from "expo-router";
 
 type SignUpForm = Form & {
   confirmPassword: string;
 };
 
-export default function SignUpCoachScreen() {
+export default function SignUpScreen() {
   const [form, setForm] = useState<SignUpForm>({
     email: "",
     password: "",
@@ -33,8 +35,19 @@ export default function SignUpCoachScreen() {
     try {
       Keyboard.dismiss();
       setLoading(true);
+      const { error } = await supabase.auth.signUp({
+        email: form.email.trim(),
+        password: form.password,
+      });
+      if (error) {
+        console.log(error);
+        setLoading(false);
+        return alert(error.message);
+      }
+      alert("Cuenta creada con éxito, ahora ingrese sus credenciales");
 
       setLoading(false);
+      router.canGoBack();
     } catch (error: any) {
       setLoading(false);
     }

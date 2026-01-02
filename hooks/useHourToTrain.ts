@@ -5,6 +5,7 @@ import { useUserStore } from "@/store/userStore";
 export const useHourToTrain = () => {
   const { user } = useUserStore();
   const [hour, setHour] = useState("");
+  const [isLoading, setIsLoading] = useState(true);
 
   const fetchHour = async () => {
     const { data } = await supabase
@@ -13,7 +14,9 @@ export const useHourToTrain = () => {
       .eq("user_id", user?.id)
       .single();
 
-    setHour(data?.hour_to_train);
+    setIsLoading(false);
+
+    setHour(data?.hour_to_train.slice(0, 5));
   };
 
   useEffect(() => {
@@ -38,5 +41,6 @@ export const useHourToTrain = () => {
   return {
     setHourToTraining,
     hour,
+    isLoading,
   };
 };

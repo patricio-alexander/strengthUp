@@ -60,6 +60,8 @@ const useWorkoutToTrain = (day: string, routineId: number | undefined) => {
   useEffect(() => {
     if (routineId) {
       getBlock();
+    } else {
+      setIsLoadingWorkout(false);
     }
   }, [day, routineId]);
 
@@ -99,6 +101,12 @@ const useRoutines = (userId: string | undefined) => {
       )
       .eq("user_id", userId)
       .single();
+
+    if (!data) {
+      setRoutine(null);
+      return;
+    }
+
     setRoutine({
       id: data?.id,
       name: data?.name,
@@ -141,7 +149,7 @@ const useWorkoutSetsData = (userId: string | undefined) => {
         "workout_sessions_exercises.workout_sessions.routines.user_id",
         userId,
       );
-
+    if (!data?.length) return;
     const d = setsGroupByDay(data as Set[]);
 
     setWorkoutSets(d);

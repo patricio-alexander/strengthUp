@@ -56,8 +56,6 @@ export default function RootLayout() {
 
   const [isAppReady, setAppIsReady] = useState(false);
 
-  const [loading, setLoading] = useState(false);
-
   const colorScheme = useColorScheme() ?? "light";
   const { background, tint } = Colors[colorScheme];
   const [loaded] = useFonts({
@@ -191,7 +189,7 @@ export default function RootLayout() {
     );
   };
 
-  if (!loaded || !isAppReady || loading) {
+  if (!loaded || !isAppReady) {
     return <Loading />;
   }
 

@@ -5,7 +5,7 @@
     "version": "1.2.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
-    "scheme": "myapp",
+    "scheme": "strengthup",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
     "ios": {
@@ -79,7 +79,8 @@
           "configureAndroidBackup": true,
           "faceIDPermission": "Allow $(PRODUCT_NAME) to access your Face ID biometric data."
         }
-      ]
+      ],
+      "@react-native-google-signin/google-signin"
     ],
     "experiments": {
       "typedRoutes": true

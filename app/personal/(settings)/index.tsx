@@ -12,11 +12,12 @@ import { useHourToTrain } from "@/hooks/useHourToTrain";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
 import { supabase } from "@/lib/supabase";
+import { Skeleton } from "@/components/Skeleton";
 
 export default function SettingsScreen() {
   const [show, setShow] = useState(false);
 
-  const { setHourToTraining, hour } = useHourToTrain();
+  const { setHourToTraining, hour, isLoading } = useHourToTrain();
   const showPicker = () => {
     setShow(true);
   };
@@ -39,14 +40,15 @@ export default function SettingsScreen() {
         </Link>
 
         <View>
-          <SettingsElement
-            icon="clock"
-            title="Hora de entrenamiento"
-            onPress={showPicker}
-          />
-          <ThemedText style={{ marginLeft: 26 }}>
-            Actual: {hour.slice(0, 5)}
-          </ThemedText>
+          <Skeleton isLoading={isLoading}>
+            <SettingsElement
+              icon="clock"
+              title="Hora de entrenamiento"
+              onPress={showPicker}
+            />
+
+            <ThemedText style={{ marginLeft: 26 }}>Actual: {hour}</ThemedText>
+          </Skeleton>
         </View>
 
         {show && (

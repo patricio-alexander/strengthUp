@@ -21,7 +21,7 @@ export const setsGroupByMonth = (sets: GroupSetsByDate[]) => {
   }, {});
 
   const result = Object.entries(months).map(([date, scores]) => ({
-    label: format(new Date(date), "MMM yyyy", { locale: es }),
+    label: format(new Date(), "MMM yyyy", { locale: es }),
     value: scores.reduce((acc, curr) => acc + curr, 0) / scores.length,
   }));
   return result;

@@ -1,72 +1,86 @@
 import { ThemedText } from "@/components/ThemedText";
 import { ThemedView } from "@/components/ThemedView";
-import { Keyboard, View } from "react-native";
+import { ActivityIndicator, Keyboard, View } from "react-native";
 import { useUserStore } from "@/store/userStore";
-import { Link, Redirect } from "expo-router";
-import { ThemedInput } from "@/components/ThemedInput";
-import { Touchable } from "@/components/Touchable";
+import { Redirect } from "expo-router";
 import { useEffect, useState } from "react";
-import { Form } from "@/types/form";
 import { supabase } from "@/lib/supabase";
+import {
+  GoogleSignin,
+  GoogleSigninButton,
+  isSuccessResponse,
+  statusCodes,
+} from "@react-native-google-signin/google-signin";
+import { useColors } from "@/hooks/useColors";
 
 export default function AuthScreen() {
   const { session } = useUserStore();
-  const [form, setForm] = useState<Form>({ email: "", password: "" });
-  const [errors, setErrors] = useState<{ message: string }>({ message: "" });
+  const { setUser } = useUserStore();
+  const { tint } = useColors();
+  const [loading, setLoading] = useState<boolean>(false);
 
   useEffect(() => {
-    const id = setTimeout(() => {
-      setErrors({ message: "" });
-    }, 5000);
-    return () => clearTimeout(id);
-  }, [errors]);
-
-  const signIn = async () => {
-    Keyboard.dismiss();
-
-    const { error } = await supabase.auth.signInWithPassword(form);
-    if (error) {
-      alert(error?.message);
-    }
-  };
-
-  const handleChangeForm = (name: keyof Form, value: string) => {
-    setForm((prev) => ({ ...prev, [name]: value }));
-  };
+    GoogleSignin.configure({
+      webClientId: process.env.EXPO_PUBLIC_CLIENT_ID_WEB,
+    });
+  }, []);
 
   if (session) {
     return <Redirect href={{ pathname: "/personal" }} />;
   }
+
+  const signIn = async () => {
+    try {
+      setLoading(true);
+      await GoogleSignin.hasPlayServices();
+      const response = await GoogleSignin.signIn();
+      if (isSuccessResponse(response)) {
+        const {
+          data: { session: remoteSession },
+          error,
+        } = await supabase.auth.signInWithIdToken({
+          provider: "google",
+          token: response.data.idToken,
+        });
+        if (remoteSession) {
+          const { data: user } = await supabase
+            .from("users")
+            .select()
+            .eq("id", remoteSession.user.id)
+            .single();
+          setUser(user);
+        }
+
+        setLoading(false);
+      }
+    } catch (error: any) {
+      setLoading(false);
+      if (error.code === statusCodes.IN_PROGRESS) {
+        console.error("Login ya en progreso");
+      } else if (error.code === statusCodes.PLAY_SERVICES_NOT_AVAILABLE) {
+        console.error("Google Play Services no disponible");
+      } else {
+        console.error("Google login error:", error);
+      }
+    }
+  };
 
   return (
     <ThemedView
       style={{ flex: 1, alignItems: "center", justifyContent: "center" }}
     >
       <ThemedText type="subtitle" style={{ marginBottom: 12 }}>
-        ¡Bienvenido a Heavy Up! 💪🚀
+        ¡Bienvenido a StrengthUp! 💪🚀
       </ThemedText>
-      <ThemedText type="defaultSemiBold">
-        Coloque las credenciales para continuar
-      </ThemedText>
-
-      <View style={{ width: "100%", padding: 20, gap: 12 }}>
-        <ThemedText>Correo</ThemedText>
-        <ThemedInput
-          onChangeText={(value) => handleChangeForm("email", value)}
+      {loading ? (
+        <ActivityIndicator size="large" color={tint} />
+      ) : (
+        <GoogleSigninButton
+          size={GoogleSigninButton.Size.Wide}
+          color={GoogleSigninButton.Color.Dark}
+          onPress={signIn}
         />
-        <ThemedText>Contraseña</ThemedText>
-        <ThemedInput
-          onChangeText={(value) => handleChangeForm("password", value)}
-        />
-        <Link
-          href={{ pathname: "/signup" }}
-          asChild
-          style={{ alignSelf: "flex-end" }}
-        >
-          <ThemedText>Registrarse</ThemedText>
-        </Link>
-        <Touchable title="Entrar" onPress={signIn} />
-      </View>
+      )}
     </ThemedView>
   );
 }

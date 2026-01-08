@@ -1,22 +1,37 @@
 import { ThemedText } from "@/components/ThemedText";
 import { ThemedView } from "@/components/ThemedView";
-import { ActivityIndicator, Keyboard, View } from "react-native";
+import { ActivityIndicator, Dimensions, Image, StyleSheet } from "react-native";
 import { useUserStore } from "@/store/userStore";
 import { Redirect } from "expo-router";
 import { useEffect, useState } from "react";
 import { supabase } from "@/lib/supabase";
+import { View } from "react-native";
 import {
   GoogleSignin,
-  GoogleSigninButton,
   isSuccessResponse,
   statusCodes,
 } from "@react-native-google-signin/google-signin";
 import { useColors } from "@/hooks/useColors";
+import { GoogleButton } from "@/components/GoogleButton";
+import { LinearGradient } from "expo-linear-gradient";
+const { width, height } = Dimensions.get("window");
+
+/*
+ 
+ Coordenadas para el linear gradient
+
+(0,0) -------- (1,0)
+  |              |
+  |              |
+  |              |
+(0,1) -------- (1,1)
+ 
+*/
 
 export default function AuthScreen() {
   const { session } = useUserStore();
   const { setUser } = useUserStore();
-  const { tint } = useColors();
+  const { tint, primary } = useColors();
   const [loading, setLoading] = useState<boolean>(false);
 
   useEffect(() => {
@@ -66,21 +81,44 @@ export default function AuthScreen() {
   };
 
   return (
-    <ThemedView
-      style={{ flex: 1, alignItems: "center", justifyContent: "center" }}
-    >
-      <ThemedText type="subtitle" style={{ marginBottom: 12 }}>
-        ¡Bienvenido a StrengthUp! 💪🚀
-      </ThemedText>
-      {loading ? (
-        <ActivityIndicator size="large" color={tint} />
-      ) : (
-        <GoogleSigninButton
-          size={GoogleSigninButton.Size.Wide}
-          color={GoogleSigninButton.Color.Dark}
-          onPress={signIn}
-        />
-      )}
-    </ThemedView>
+    <View style={{ flex: 1 }}>
+      <Image
+        source={require("../assets/images/pexels-leonmart-1552106.jpg")}
+        style={{ width, height, ...StyleSheet.absoluteFillObject }}
+      />
+      <LinearGradient
+        // Background Linear Gradient
+        colors={["transparent", "rgba(0,0,0,0.8)"]}
+        style={{
+          position: "absolute",
+          bottom: 0,
+          left: 0,
+          right: 0,
+          height: height / 2,
+        }}
+      />
+      <View
+        style={{
+          alignItems: "center",
+          justifyContent: "center",
+          position: "absolute",
+          bottom: 100,
+          alignSelf: "center",
+        }}
+      >
+        <ThemedText
+          type="subtitle"
+          style={{ marginBottom: 30, color: "white" }}
+        >
+          ¡Bienvenido a StrengthUp! 💪🚀
+        </ThemedText>
+
+        {loading ? (
+          <ActivityIndicator size="large" color={tint} />
+        ) : (
+          <GoogleButton onPress={signIn} />
+        )}
+      </View>
+    </View>
   );
 }

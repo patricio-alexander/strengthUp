@@ -16,6 +16,8 @@ import {
   Inter_900Black,
 } from "@expo-google-fonts/inter";
 
+import { useFonts as useCustomFonts } from "expo-font";
+
 import * as SplashScreen from "expo-splash-screen";
 import { StatusBar } from "expo-status-bar";
 import { Suspense, useEffect, useState } from "react";
@@ -68,6 +70,10 @@ export default function RootLayout() {
     Inter_700Bold,
     Inter_800ExtraBold,
     Inter_900Black,
+  });
+
+  const [loadedCustom, errorCustom] = useCustomFonts({
+    Roboto_Medium: require("../assets/fonts/Roboto-Medium.ttf"),
   });
 
   //useDrizzleStudio(expo);
@@ -189,7 +195,7 @@ export default function RootLayout() {
     );
   };
 
-  if (!loaded || !isAppReady) {
+  if (!loaded || !isAppReady || !loadedCustom) {
     return <Loading />;
   }
 

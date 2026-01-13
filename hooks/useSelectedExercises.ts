@@ -10,22 +10,22 @@ export const useSelectedExercises = (workoutId: string) => {
   const [isLoading, setIsLoading] = useState(true);
 
   const fetchSelectedExercises = async () => {
+    setIsLoading(true);
     const { data, error } = await supabase
       .from("workout_sessions_exercises")
       .select(
         `
           wse_id:id,
           sorted,
-          exercises(exercise_id:id, name)
+          user_exercises(exercise_id:id, name)
       `,
       )
       .eq("workout_id", workoutId)
       .order("sorted", { ascending: true });
-    console.log(data);
 
     const selected = data?.map((e) => ({
-      id: e.exercises.exercise_id,
-      name: e.exercises.name,
+      id: e.user_exercises.exercise_id,
+      name: e.user_exercises.name,
       workoutSesssionExerciseId: e.wse_id,
     }));
 

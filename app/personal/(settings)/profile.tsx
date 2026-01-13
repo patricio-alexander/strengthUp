@@ -53,7 +53,6 @@ export default function ProfileScreen() {
       <View style={styles.imageContainer}>
         <Image source={{ uri: user?.avatar_url }} style={{ flex: 1 }} />
       </View>
-      <Touchable type="shadow" title="Cambiar foto" />
       <View style={styles.inputControl}>
         <ThemedText type="defaultSemiBold">Nombre de usuario</ThemedText>
         <ThemedInput

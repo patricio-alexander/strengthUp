@@ -9,12 +9,15 @@ import { Octicons } from "@expo/vector-icons";
 import SettingsIcon from "@/components/icons/Settings";
 import { useUserStore } from "@/store/userStore";
 
+import { useNotifications } from "@/hooks/useNotifications";
+
 export default function TabLayout() {
   const colorScheme = useColorScheme();
-  const { session } = useUserStore();
+  const { session, user } = useUserStore();
   if (!session) {
     return <Redirect href={{ pathname: "/" }} />;
   }
+  useNotifications(user?.id);
 
   return (
     <Tabs

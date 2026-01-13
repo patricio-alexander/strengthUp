@@ -39,13 +39,13 @@ export default function NewDayModal() {
   const [valueInput, setValueInput] = useState("");
 
   const [daysWeek, setDaysWeek] = useState([
-    { name: "Lunes", index: 1, check: false },
-    { name: "Martes", index: 2, check: false },
-    { name: "Miércoles", index: 3, check: false },
-    { name: "Jueves", index: 4, check: false },
-    { name: "Viernes", index: 5, check: false },
-    { name: "Sábado", index: 6, check: false },
-    { name: "Domingo", index: 0, check: false },
+    { name: "Lunes", check: false, key: "monday" },
+    { name: "Martes", check: false, key: "tuesday" },
+    { name: "Miércoles", check: false, key: "wednesday" },
+    { name: "Jueves", check: false, key: "thursday" },
+    { name: "Viernes", check: false, key: "friday" },
+    { name: "Sábado", check: false, key: "saturday" },
+    { name: "Domingo", check: false, key: "sunday" },
   ]);
   const { routineId, value, workoutSessionId } = useLocalSearchParams<{
     routineId: string;
@@ -72,7 +72,7 @@ export default function NewDayModal() {
 
     const { data, error } = await supabase.from("workout_sessions").insert({
       name: valueInput,
-      day: day?.name.toLocaleLowerCase(),
+      day: day?.key,
       routine_id: routineId,
     });
 
@@ -84,7 +84,7 @@ export default function NewDayModal() {
     const day = daysWeek.find((day) => day.check);
     await supabase
       .from("workout_sessions")
-      .update({ name: valueInput, day: day?.name.toLocaleLowerCase() })
+      .update({ name: valueInput, day: day?.key })
       .eq("id", workoutSessionId);
 
     navigation.goBack();
@@ -93,9 +93,7 @@ export default function NewDayModal() {
   const checkDay = (d: string | null) => {
     setDaysWeek((prev) =>
       prev.map((day) =>
-        day.name.toLocaleLowerCase() === d?.toLocaleLowerCase()
-          ? { ...day, check: true }
-          : { ...day, check: false },
+        day.key === d ? { ...day, check: true } : { ...day, check: false },
       ),
     );
   };
@@ -175,21 +173,21 @@ export default function NewDayModal() {
         <ThemedText type="defaultSemiBold">¿Qué día entrenarás?</ThemedText>
         <View style={{ flexDirection: "row", justifyContent: "space-around" }}>
           <View style={{ gap: 10 }}>
-            {daysWeek.slice(0, 4).map(({ name, check, index }, i) => (
+            {daysWeek.slice(0, 4).map(({ name, check, key }, i) => (
               <ThemedCheckBox
                 key={i}
                 title={name}
-                handleChange={() => checkDay(name)}
+                handleChange={() => checkDay(key)}
                 check={check}
               />
             ))}
           </View>
           <View style={{ gap: 10 }}>
-            {daysWeek.slice(4).map(({ name, check, index }, i) => (
+            {daysWeek.slice(4).map(({ name, check, key }, i) => (
               <ThemedCheckBox
                 key={i}
                 title={name}
-                handleChange={() => checkDay(name)}
+                handleChange={() => checkDay(key)}
                 check={check}
               />
             ))}

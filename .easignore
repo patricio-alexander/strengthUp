@@ -5,11 +5,8 @@ node_modules/
 
 .env
 notifications-strengthup-firebase-fcmv1.json
-google-services.json
+# google-services.json
 exercises.csv
-
-
-.vscode
 
 android/
 ios/

@@ -15,30 +15,72 @@ import { supabase } from "@/lib/supabase";
 import { Exercises } from "@/types/exercises";
 import { useSelectedExercises } from "@/hooks/useSelectedExercises";
 import { Skeleton } from "@/components/Skeleton";
+import { useUserStore } from "@/store/userStore";
+import { useColors } from "@/hooks/useColors";
 
-const useExercises = () => {
+const useDefaultExercises = () => {
+  const [defaultExercises, setDefaultExercises] = useState<Exercises[]>([]);
+
+  const fetchDefaultExercises = async () => {
+    const { data } = await supabase
+      .from("user_exercises")
+      .select()
+      .eq("default_exercise", true);
+    if (!data?.length) {
+      return;
+    }
+
+    setDefaultExercises(data);
+  };
+
+  useEffect(() => {
+    fetchDefaultExercises();
+  }, []);
+  return { defaultExercises, fetchDefaultExercises };
+};
+
+const useUserExercises = (userId: string | undefined) => {
   const [exercises, setExercises] = useState<Exercises[]>([]);
 
   const fetchExercises = async () => {
-    const { data } = await supabase.from("exercises").select();
+    const { data } = await supabase
+      .from("user_exercises")
+      .select()
+      .eq("user_id", userId);
 
     if (data) {
       setExercises(data);
     }
   };
 
+  const removeExercise = async ({ id }: { id: number }) => {
+    setExercises((prev) => prev.filter((e) => e.id !== id));
+    await supabase.from("user_exercises").delete().eq("id", id);
+  };
+
   useEffect(() => {
     fetchExercises();
   }, []);
 
-  return { exercises, fetchExercises };
+  return { exercises, fetchExercises, removeExercise };
 };
+
+enum ExercisesFilter {
+  myExercises,
+  defaultExercises,
+}
 
 export default function ModalAddExercices() {
   const { workoutId } = useLocalSearchParams<{ workoutId: string }>();
+  const { user } = useUserStore();
 
-  const { exercises, fetchExercises } = useExercises();
-  const { selectedExercises, isLoading } = useSelectedExercises(workoutId);
+  const { exercises, fetchExercises, removeExercise } = useUserExercises(
+    user?.id,
+  );
+  const { selectedExercises, isLoading, fetchSelectedExercises } =
+    useSelectedExercises(workoutId);
+  const { defaultExercises } = useDefaultExercises();
+  const { secondary } = useColors();
 
   const bg = useThemeColor({}, "background");
   const tint = useThemeColor({}, "foreground");
@@ -47,14 +89,18 @@ export default function ModalAddExercices() {
   const [isEdit, setIsEdit] = useState(false);
   const [exerciseId, setExerciseId] = useState(0);
   const [search, setSearch] = useState("");
+  const [exercisesFilter, setExercisesFilter] = useState<ExercisesFilter>(
+    ExercisesFilter.myExercises,
+  );
 
   const addNewExercise = async () => {
     if (!isValidName(exerciseName)) {
       return;
     }
 
-    await supabase.from("exercises").insert({
+    await supabase.from("user_exercises").insert({
       name: exerciseName,
+      user_id: user?.id,
     });
 
     setVisible(false);
@@ -75,7 +121,7 @@ export default function ModalAddExercices() {
     }
 
     const { error } = await supabase
-      .from("exercises")
+      .from("user_exercises")
       .update({ name: exerciseName })
       .eq("id", exerciseId);
 
@@ -95,6 +141,8 @@ export default function ModalAddExercices() {
       await supabase
         .from("workout_sessions_exercises")
         .insert({ workout_id: workoutId, exercise_id: exerciseId });
+      fetchSelectedExercises();
+
       return;
     }
 
@@ -113,15 +161,25 @@ export default function ModalAddExercices() {
               .delete()
               .eq("exercise_id", exerciseId)
               .eq("workout_id", workoutId);
+            fetchSelectedExercises();
           },
         },
       ],
     );
   };
 
-  const filter = exercises.filter(({ name }) =>
-    name?.toLocaleUpperCase().includes(search.toUpperCase()),
-  );
+  let filter: Exercises[] = [];
+
+  if (exercisesFilter === ExercisesFilter.myExercises) {
+    filter = exercises.filter(({ name }) =>
+      name?.toLocaleUpperCase().includes(search.toUpperCase()),
+    );
+  }
+  if (exercisesFilter === ExercisesFilter.defaultExercises) {
+    filter = defaultExercises.filter(({ name }) =>
+      name?.toLocaleUpperCase().includes(search.toUpperCase()),
+    );
+  }
 
   return (
     <ThemedView>
@@ -137,6 +195,40 @@ export default function ModalAddExercices() {
         onChangeText={setSearch}
         value={search}
       />
+      <View
+        style={{
+          flexDirection: "row",
+          alignItems: "center",
+          justifyContent: "space-around",
+          marginBottom: 12,
+        }}
+      >
+        <Touchable
+          title="Mis ejercicios"
+          onPress={() => {
+            setExercisesFilter(ExercisesFilter.myExercises);
+          }}
+          style={{
+            backgroundColor:
+              exercisesFilter === ExercisesFilter.myExercises
+                ? secondary
+                : undefined,
+          }}
+        />
+        <Touchable
+          title="Ejercicios disponibles"
+          onPress={() => {
+            setExercisesFilter(ExercisesFilter.defaultExercises);
+          }}
+          style={{
+            backgroundColor:
+              exercisesFilter === ExercisesFilter.defaultExercises
+                ? secondary
+                : undefined,
+          }}
+        />
+      </View>
+
       <Modal animationType="fade" visible={visible} onRequestClose={closeModal}>
         <ThemedText type="defaultSemiBold" style={{ marginBottom: 12 }}>
           {isEdit ? "Actualizar nombre" : "Nombre"} del ejercicio
@@ -170,7 +262,7 @@ export default function ModalAddExercices() {
             title="Eliminar"
             disabled={!exerciseName.length}
             onPress={() => {
-              //removeExercise({ id: Number(exerciseId) });
+              removeExercise({ id: Number(exerciseId) });
               setVisible(false);
               setExerciseName("");
               setExerciseId(0);
@@ -190,42 +282,77 @@ export default function ModalAddExercices() {
             <ItemList value="" />
           </Skeleton>
         </View>
-      ) : !exercises.length ? (
+      ) : !exercises.length &&
+        exercisesFilter === ExercisesFilter.myExercises ? (
         <ThemedText style={{ textAlign: "center" }}>
           No hay ejercicios. ¡Agrega uno!
         </ThemedText>
       ) : (
-        <FlatList
-          contentContainerStyle={Styles.listContent}
-          keyExtractor={(_, index) => index.toString()}
-          data={filter}
-          renderItem={({ item }) => {
-            return (
-              <ItemList
-                onLongPress={() => {
-                  setIsEdit(true);
-                  setVisible(true);
-                  setExerciseName(item?.name ?? "");
-                  setExerciseId(item.id);
-                }}
-                value={item.name as string}
-                style={
-                  selectedExercises.some(
-                    (exercise) => item.id === exercise.id,
-                  ) && {
-                    backgroundColor: tint,
-                  }
-                }
-                textStyle={
-                  selectedExercises.some(
-                    (exercise) => item.id === exercise.id,
-                  ) && { color: bg }
-                }
-                onPress={() => selectExercise({ exerciseId: item.id })}
-              />
-            );
-          }}
-        />
+        <>
+          {exercisesFilter === ExercisesFilter.myExercises && (
+            <FlatList
+              showsVerticalScrollIndicator={false}
+              contentContainerStyle={Styles.listContent}
+              keyExtractor={(_, index) => index.toString()}
+              data={filter}
+              renderItem={({ item }) => {
+                return (
+                  <ItemList
+                    onLongPress={() => {
+                      setIsEdit(true);
+                      setVisible(true);
+                      setExerciseName(item?.name ?? "");
+                      setExerciseId(item.id);
+                    }}
+                    value={item.name as string}
+                    style={
+                      selectedExercises.some(
+                        (exercise) => item.id === exercise.id,
+                      ) && {
+                        backgroundColor: tint,
+                      }
+                    }
+                    textStyle={
+                      selectedExercises.some(
+                        (exercise) => item.id === exercise.id,
+                      ) && { color: bg }
+                    }
+                    onPress={() => selectExercise({ exerciseId: item.id })}
+                  />
+                );
+              }}
+            />
+          )}
+
+          {exercisesFilter === ExercisesFilter.defaultExercises && (
+            <FlatList
+              showsVerticalScrollIndicator={false}
+              contentContainerStyle={Styles.listContent}
+              keyExtractor={(_, index) => index.toString()}
+              data={filter}
+              renderItem={({ item }) => {
+                return (
+                  <ItemList
+                    value={item.name as string}
+                    style={
+                      selectedExercises.some(
+                        (exercise) => item.id === exercise.id,
+                      ) && {
+                        backgroundColor: tint,
+                      }
+                    }
+                    textStyle={
+                      selectedExercises.some(
+                        (exercise) => item.id === exercise.id,
+                      ) && { color: bg }
+                    }
+                    onPress={() => selectExercise({ exerciseId: item.id })}
+                  />
+                );
+              }}
+            />
+          )}
+        </>
       )}
     </ThemedView>
   );

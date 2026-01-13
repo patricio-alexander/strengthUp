@@ -1,5 +1,4 @@
 import { ThemedText } from "@/components/ThemedText";
-import { ThemedView } from "@/components/ThemedView";
 import { ActivityIndicator, Dimensions, Image, StyleSheet } from "react-native";
 import { useUserStore } from "@/store/userStore";
 import { Redirect } from "expo-router";
@@ -31,7 +30,7 @@ const { width, height } = Dimensions.get("window");
 export default function AuthScreen() {
   const { session } = useUserStore();
   const { setUser } = useUserStore();
-  const { tint, primary } = useColors();
+  const { tint } = useColors();
   const [loading, setLoading] = useState<boolean>(false);
 
   useEffect(() => {
@@ -84,32 +83,15 @@ export default function AuthScreen() {
     <View style={{ flex: 1 }}>
       <Image
         source={require("../assets/images/pexels-leonmart-1552106.jpg")}
-        style={{ width, height, ...StyleSheet.absoluteFillObject }}
+        style={styles.image}
       />
       <LinearGradient
         // Background Linear Gradient
         colors={["transparent", "rgba(0,0,0,0.8)"]}
-        style={{
-          position: "absolute",
-          bottom: 0,
-          left: 0,
-          right: 0,
-          height: height / 2,
-        }}
+        style={styles.gradient}
       />
-      <View
-        style={{
-          alignItems: "center",
-          justifyContent: "center",
-          position: "absolute",
-          bottom: 100,
-          alignSelf: "center",
-        }}
-      >
-        <ThemedText
-          type="subtitle"
-          style={{ marginBottom: 30, color: "white" }}
-        >
+      <View style={styles.wrapperAuth}>
+        <ThemedText type="subtitle" style={styles.text}>
           ¡Bienvenido a StrengthUp! 💪🚀
         </ThemedText>
 
@@ -122,3 +104,27 @@ export default function AuthScreen() {
     </View>
   );
 }
+
+const styles = StyleSheet.create({
+  image: {
+    width,
+    height,
+    ...StyleSheet.absoluteFillObject,
+  },
+  gradient: {
+    position: "absolute",
+    bottom: 0,
+    left: 0,
+    right: 0,
+    height: height / 2,
+  },
+
+  wrapperAuth: {
+    alignItems: "center",
+    justifyContent: "center",
+    position: "absolute",
+    bottom: 100,
+    alignSelf: "center",
+  },
+  text: { marginBottom: 30, color: "white" },
+});

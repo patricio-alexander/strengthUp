@@ -11,6 +11,7 @@ StreghthUp, una aplicación para registrar tus entrenamientos del gimnasio de ma
 ![typescript](https://img.shields.io/badge/TypeScript-black?style=for-the-badge&logo=typescript)
 ![revenuecat](https://img.shields.io/badge/RevenueCat-black?style=for-the-badge&logo=revenuecat)
 
+![mockup-login](.images/app-google-login.png)
 ![image](.images/mockup.png)
 
 ## Modelo relacional de base de datos 📏

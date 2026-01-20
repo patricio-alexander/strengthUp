@@ -1,3 +1,5 @@
+import { supabase } from "@/lib/supabase";
+
 type sets = {
   reps: number;
   weight: number;
@@ -17,83 +19,79 @@ export const importRoutieFromCatalog = async ({
   code: string;
   userId: number;
 }) => {
-  // const docRef = doc(firestore, "catalog-routines", code);
-  //
-  // const routineSnap = await getDoc(docRef);
-  //
-  // if (!routineSnap.exists()) {
-  //   return;
-  // }
-  //
-  // const routine = routineSnap.data();
-  //
-  // const [{ rouId }] = await drizzleDb
-  //   .insert(routines)
-  //   .values({
-  //     name: routine.name,
-  //     userId,
-  //   })
-  //   .returning({ rouId: routines.id });
-  //
-  // const daysInsert = routine.days.map((d: Days) => ({
-  //   name: d.name,
-  //   routineId: rouId,
-  //   day: d.day,
-  // }));
-  //
-  // const exercisesInsert = Array.from(
-  //   new Set(
-  //     routine.days.flatMap((d) =>
-  //       d.exercises.map((e) => ({ name: e.name })),
-  //     ),
-  //   ),
-  // );
-  //
-  // const listDays = await drizzleDb
-  //   .insert(days)
-  //   .values(daysInsert)
-  //   .returning({ id: days.id, name: days.name, day: days.day });
-  //
-  // const listExercises = await drizzleDb
-  //   .insert(exercises)
-  //   .values(exercisesInsert)
-  //   .returning({ name: exercises.name, id: exercises.id });
-  //
-  // const daysExercisesInsert = routine.days.flatMap((d) =>
-  //   d.exercises.map((e) => {
-  //     const dayId = listDays.find((ld) => ld.day === d.day)?.id;
-  //     const exerciseId = listExercises.find((el) => el.name === e.name)?.id;
-  //     return { dayId, exerciseId };
-  //   }),
-  // );
-  //
-  // const daysExercisesReturn = await drizzleDb
-  //   .insert(daysExcercises)
-  //   .values(daysExercisesInsert)
-  //   .returning({
-  //     dayExerciseId: daysExcercises.id,
-  //     exerciseId: daysExcercises.exerciseId,
-  //     dayId: daysExcercises.dayId,
-  //   });
-  //
-  // const date = new Date();
-  //
-  // const setsInsert = routine.days.flatMap((d) =>
-  //   d.exercises.flatMap((e) => {
-  //     const exerciseId = listExercises.find((el) => el.name === e.name)?.id;
-  //     const dayId = listDays.find((ld) => ld.day === d.day)?.id;
-  //
-  //     const dayExerciseId = daysExercisesReturn.find(
-  //       (d) => d.exerciseId === exerciseId && d.dayId === dayId,
-  //     )?.dayExerciseId;
-  //
-  //     return Array.from({ length: e.sets }).map(() => ({
-  //       dayExerciseId: dayExerciseId as number,
-  //       reps: e.reps as number,
-  //       weight: 0,
-  //       date: date.getTime(),
-  //     }));
-  //   }),
-  // );
-  // await drizzleDb.insert(sets).values(setsInsert);
+  const { data } = await supabase
+    .from("catalog_routines")
+    .select()
+    .eq("id", code)
+    .single();
+
+  if (!data) {
+    return;
+  }
+
+  const { data: routine } = await supabase
+    .from("routines")
+    .insert({ name: data.name, user_id: userId })
+    .select()
+    .single();
+
+  const workoutsToInsert = data.days.map((r) => ({
+    routine_id: routine.id,
+    name: r.name,
+    day: r.day,
+    sorted: 0,
+  }));
+
+  const exercisesInsert = Array.from(
+    new Set(
+      data.days.flatMap((d) =>
+        d.exercises.map((e) => ({ name: e.name, user_id: userId })),
+      ),
+    ),
+  );
+
+  const { data: workoutsSessions } = await supabase
+    .from("workout_sessions")
+    .insert(workoutsToInsert)
+    .select();
+
+  const { data: userExercises } = await supabase
+    .from("user_exercises")
+    .insert(exercisesInsert)
+    .select();
+
+  const workoutExercisesInsert = data.days.flatMap((d) =>
+    d.exercises.map((e) => {
+      const workoutId = workoutsSessions.find((ld) => ld.day === d.day)?.id;
+      const exerciseId = userExercises.find((el) => el.name === e.name)?.id;
+      return { workout_id: workoutId, exercise_id: exerciseId };
+    }),
+  );
+
+  const { data: workoutSessionsExercises } = await supabase
+    .from("workout_sessions_exercises")
+    .insert(workoutExercisesInsert)
+    .select();
+
+  const date = new Date().toISOString();
+
+  const setsInsert = data.days.flatMap((d) =>
+    d.exercises.flatMap((e) => {
+      const exerciseId = userExercises.find((el) => el.name === e.name)?.id;
+      const workoutId = workoutsSessions.find((ld) => ld.day === d.day)?.id;
+
+      const workoutSessionExerciseId = workoutSessionsExercises.find(
+        (d) => d.exercise_id === exerciseId && d.workout_id === workoutId,
+      )?.id;
+
+      return Array.from({ length: e.sets }).map(() => ({
+        workout_session_exercise_id: workoutSessionExerciseId,
+        reps: e.reps as number,
+        weight: 0,
+        performed_at: date,
+      }));
+    }),
+  );
+
+  await supabase.from("exercise_sets").insert(setsInsert);
 };

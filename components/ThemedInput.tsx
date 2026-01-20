@@ -1,4 +1,5 @@
 import { Colors } from "@/constants/Colors";
+import { useState } from "react";
 import { type TextInputProps, TextInput, useColorScheme } from "react-native";
 
 type ThemedInputProps = TextInputProps & {
@@ -12,7 +13,7 @@ export const ThemedInput: React.FC<ThemedInputProps> = ({
 }) => {
   const colorScheme = useColorScheme() ?? "light";
 
-  const { text, tertiary, secondary } = Colors[colorScheme];
+  const { text, tertiary, primary } = Colors[colorScheme];
 
   return (
     <TextInput
@@ -20,8 +21,9 @@ export const ThemedInput: React.FC<ThemedInputProps> = ({
         type === "default" && {
           color: text,
           paddingHorizontal: 10,
+          paddingVertical: 15,
           fontFamily: "Inter_400Regular",
-          backgroundColor: secondary,
+          backgroundColor: primary,
           borderRadius: 10,
           fontSize: 16,
         },

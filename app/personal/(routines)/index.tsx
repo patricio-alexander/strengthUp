@@ -40,7 +40,7 @@ const useWorkoutToTrain = (day: string, routineId: number | undefined) => {
   const [exist, setExist] = useState(false);
   const [isLoadingWorkout, setIsLoadingWorkout] = useState(true);
   const getBlock = async () => {
-    const { data } = await supabase
+    const { error, data } = await supabase
       .from("workout_sessions")
       .select("id, name")
       .eq("routine_id", routineId)
@@ -57,13 +57,15 @@ const useWorkoutToTrain = (day: string, routineId: number | undefined) => {
     setIsLoadingWorkout(false);
   };
 
-  useEffect(() => {
-    if (routineId) {
-      getBlock();
-    } else {
-      setIsLoadingWorkout(false);
-    }
-  }, [day, routineId]);
+  useFocusEffect(
+    useCallback(() => {
+      if (routineId) {
+        getBlock();
+      } else {
+        setIsLoadingWorkout(false);
+      }
+    }, []),
+  );
 
   return { block, getBlock, exist, isLoadingWorkout };
 };
@@ -176,7 +178,7 @@ export default function HomeScreen() {
   const { workoutSets } = useWorkoutSetsData(user?.id);
 
   const progressIndex = usePerformanceIndex(workoutSets);
-  const day = format(new Date(), "eeee", { locale: es });
+  const day = format(new Date(), "eeee").toLocaleLowerCase();
   const { block, getBlock, exist, isLoadingWorkout } = useWorkoutToTrain(
     day,
     routine?.id,
@@ -185,11 +187,10 @@ export default function HomeScreen() {
   const { filters, onChangeFilter, range } = useFilters();
 
   const lineChart = useChartData(range, workoutSets);
-  const [show, setShow] = useState(false);
   // const { existHour, setHourToTraining } = useHourToTrain();
 
-  const showPicker = () => {
-    setShow(true);
+  const removeRoutine = async (routineId: string) => {
+    await supabase.from("routines").delete().eq("id", routineId);
   };
 
   const remove = async () => {
@@ -205,11 +206,9 @@ export default function HomeScreen() {
         {
           text: "Confirmar",
           onPress: async () => {
-            //await TrainingFacade.removeRoutine(routineId);
-            getRoutines();
-            //getBlock();
-
+            removeRoutine(routineId as string);
             setShowModalEdit(false);
+            getRoutines();
           },
         },
       ],
@@ -221,7 +220,13 @@ export default function HomeScreen() {
       return;
     }
 
-    //await TrainingFacade.updateRoutine({ name: routineName }, routineId);
+    await supabase
+      .from("routines")
+      .update({
+        name: routineName,
+      })
+      .eq("id", routineId);
+
     await getRoutines();
 
     setShowModalEdit(false);
@@ -419,10 +424,11 @@ export default function HomeScreen() {
         <ThemedInput onChangeText={setRoutineName} value={routineName} />
         <View
           style={{
-            marginTop: 10,
+            marginTop: 12,
             flexDirection: "row",
-            justifyContent: "center",
+            justifyContent: "space-around",
             alignItems: "center",
+            marginBottom: 12,
           }}
         >
           <Touchable title="Cancelar" onPress={() => setShowModalEdit(false)} />

@@ -43,10 +43,8 @@ export const Touchable = React.forwardRef<View, ButtonProps>(
             backgroundColor: primary,
             borderRadius: 10,
             paddingHorizontal: 12,
-            marginBottom: 6,
             justifyContent: "center",
             height: 45,
-            marginHorizontal: 12,
             paddingVertical: 6,
           },
           type === "danger" && {

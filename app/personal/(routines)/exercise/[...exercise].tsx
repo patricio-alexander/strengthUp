@@ -101,7 +101,7 @@ const useLastWorkout = (id: number) => {
 };
 
 export default function ExerciseScreen() {
-  const { tint, green, primary } = useColors();
+  const { tint, green, primary, secondary } = useColors();
   const { isPremium } = useUserStore();
 
   const [form, setForm] = useState({ weight: "", reps: "" });
@@ -366,8 +366,14 @@ export default function ExerciseScreen() {
               </ThemedText>
               <View style={Styles.cell}>
                 <ThemedInput
+                  type="shadow"
                   style={[
-                    { textAlign: "right", paddingRight: 35 },
+                    {
+                      textAlign: "right",
+                      paddingRight: 35,
+                      backgroundColor: secondary,
+                      borderRadius: 10,
+                    },
                     focusInput.index === index &&
                       focusInput.field === "weight" && {
                         borderColor: tint,
@@ -389,7 +395,7 @@ export default function ExerciseScreen() {
                   style={{
                     position: "absolute",
                     right: 10,
-                    top: 13,
+                    top: 10,
                     color: tint,
                   }}
                 >
@@ -398,8 +404,14 @@ export default function ExerciseScreen() {
               </View>
               <View style={Styles.cell}>
                 <ThemedInput
+                  type="shadow"
                   style={[
-                    { textAlign: "right", paddingRight: 50 },
+                    {
+                      textAlign: "right",
+                      paddingRight: 50,
+                      backgroundColor: secondary,
+                      borderRadius: 10,
+                    },
                     focusInput.index === index &&
                       focusInput.field === "reps" && {
                         borderColor: tint,
@@ -421,7 +433,7 @@ export default function ExerciseScreen() {
                   style={{
                     position: "absolute",
                     right: 10,
-                    top: 13,
+                    top: 10,
                     color: tint,
                   }}
                 >

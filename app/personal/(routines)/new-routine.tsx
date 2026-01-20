@@ -26,7 +26,6 @@ import OpenAI from "react-native-openai";
 import { NavigationHeader } from "@/components/NavigationHeader";
 import { isValidName } from "@/helpers/inputValidation";
 import { useColors } from "@/hooks/useColors";
-import { Card } from "@/components/Card";
 import { QrCodeScan } from "@/components/icons/QrCode";
 import { useCameraPermissions } from "expo-camera";
 import { importRoutieFromCatalog } from "@/utils/importRoutineFromCatalog";
@@ -52,13 +51,14 @@ type routineIA = {
 export default function ModalNewRoutine() {
   const { user, setIsPremium, isPremium } = useUserStore();
 
-  const { tint } = useColors();
+  const { tint, secondary, primary } = useColors();
   const [generateAI, setGenerateAI] = useState(false);
   const [checkAllInputs, setCheckAllInputs] = useState(false);
   const [loading, setLoading] = useState(false);
   const [value, setValue] = useState("");
   const [importRoutine, setImportRoutine] = useState<boolean>(false);
   const [_, requestPermission] = useCameraPermissions();
+  const [typeCreate, setTypeCreate] = useState<"create" | "import">("create");
 
   const [isCompleteGenerateRoutine, setIsCompleteGenerateRoutine] =
     useState(false);
@@ -139,75 +139,75 @@ export default function ModalNewRoutine() {
     }
   };
 
-  // const addRoutineGenerateByIA = async (routine: routineIA) => {
-  //   //console.log("Agregando rutina a DB");
-  //   //console.log(routine);
-  //   const [{ rouId }] = await drizzleDb
-  //     .insert(routines)
-  //     .values({
-  //       name: routine.routinename,
-  //       userId,
-  //     })
-  //     .returning({ rouId: routines.id });
-  //
-  //   const daysInsert = routine.days.map((d: days) => ({
-  //     name: d.name,
-  //     routineId: rouId,
-  //   }));
-  //
-  //   const daysReturn = await drizzleDb
-  //     .insert(days)
-  //     .values(daysInsert)
-  //     .returning({ id: days.id, name: days.name });
-  //
-  //   const exercisesInsert = routine.days
-  //     .map((d) => d.exercises.map((e) => ({ name: e })))
-  //     .flat();
-  //
-  //   const exercisesReturn = await drizzleDb
-  //     .insert(exercises)
-  //     .values(exercisesInsert)
-  //     .returning({ name: exercises.name, id: exercises.id });
-  //
-  //   const daysExercisesInsert = exercisesReturn.map((e) => ({
-  //     dayId: Number(
-  //       daysReturn.find((_, i) => routine.days[i].exercises.includes(e.name))
-  //         ?.id,
-  //     ),
-  //     exerciseId: e.id,
-  //   }));
-  //
-  //   const formatNowDate = new Date();
-  //   const daysExersisesReturn = await drizzleDb
-  //     .insert(daysExcercises)
-  //     .values(daysExercisesInsert)
-  //     .returning({
-  //       dayExerciseId: daysExcercises.id,
-  //       exerciseId: daysExcercises.exerciseId,
-  //     });
-  //
-  //   const setsInsert = routine.days.flatMap((d) =>
-  //     d.exercises.flatMap((de) => {
-  //       const exerciseId = exercisesReturn.find((e) => e.name === de)?.id;
-  //
-  //       const dayExerciseId = daysExersisesReturn.find(
-  //         (e) => e.exerciseId === exerciseId,
-  //       )?.dayExerciseId;
-  //
-  //       return d.sets.map((s) => ({
-  //         dayExerciseId: dayExerciseId as number,
-  //         reps: s.reps as number,
-  //         weight: s.weight as number,
-  //         date: formatNowDate,
-  //       }));
-  //     }),
-  //   );
-  //
-  //   await drizzleDb.insert(sets).values(setsInsert);
-  //
-  //
-  //   setIsCompleteGenerateRoutine(true);
-  // };
+  const addRoutineGenerateByIA = async (routine: routineIA) => {
+    //   //console.log("Agregando rutina a DB");
+    //   //console.log(routine);
+    //   const [{ rouId }] = await drizzleDb
+    //     .insert(routines)
+    //     .values({
+    //       name: routine.routinename,
+    //       userId,
+    //     })
+    //     .returning({ rouId: routines.id });
+    //
+    //   const daysInsert = routine.days.map((d: days) => ({
+    //     name: d.name,
+    //     routineId: rouId,
+    //   }));
+    //
+    //   const daysReturn = await drizzleDb
+    //     .insert(days)
+    //     .values(daysInsert)
+    //     .returning({ id: days.id, name: days.name });
+    //
+    //   const exercisesInsert = routine.days
+    //     .map((d) => d.exercises.map((e) => ({ name: e })))
+    //     .flat();
+    //
+    //   const exercisesReturn = await drizzleDb
+    //     .insert(exercises)
+    //     .values(exercisesInsert)
+    //     .returning({ name: exercises.name, id: exercises.id });
+    //
+    //   const daysExercisesInsert = exercisesReturn.map((e) => ({
+    //     dayId: Number(
+    //       daysReturn.find((_, i) => routine.days[i].exercises.includes(e.name))
+    //         ?.id,
+    //     ),
+    //     exerciseId: e.id,
+    //   }));
+    //
+    //   const formatNowDate = new Date();
+    //   const daysExersisesReturn = await drizzleDb
+    //     .insert(daysExcercises)
+    //     .values(daysExercisesInsert)
+    //     .returning({
+    //       dayExerciseId: daysExcercises.id,
+    //       exerciseId: daysExcercises.exerciseId,
+    //     });
+    //
+    //   const setsInsert = routine.days.flatMap((d) =>
+    //     d.exercises.flatMap((de) => {
+    //       const exerciseId = exercisesReturn.find((e) => e.name === de)?.id;
+    //
+    //       const dayExerciseId = daysExersisesReturn.find(
+    //         (e) => e.exerciseId === exerciseId,
+    //       )?.dayExerciseId;
+    //
+    //       return d.sets.map((s) => ({
+    //         dayExerciseId: dayExerciseId as number,
+    //         reps: s.reps as number,
+    //         weight: s.weight as number,
+    //         date: formatNowDate,
+    //       }));
+    //     }),
+    //   );
+    //
+    //   await drizzleDb.insert(sets).values(setsInsert);
+    //
+    //
+    //   setIsCompleteGenerateRoutine(true);
+  };
 
   const handleCheck = (questionId: number, optionId: number) => {
     setQuestions((questions) =>
@@ -301,7 +301,7 @@ export default function ModalNewRoutine() {
 
   const importRoutineInDevice = async () => {
     setImportRoutine(true);
-    //await importRoutieFromCatalog({ code: codeRoutine, userId });
+    await importRoutieFromCatalog({ code: codeRoutine, userId: user?.id });
 
     setImportRoutine(false);
 
@@ -333,7 +333,7 @@ export default function ModalNewRoutine() {
 
       if (!payload.choices[0]?.finishReason) {
         try {
-          //addRoutineGenerateByIA(JSON.parse(message));
+          addRoutineGenerateByIA(JSON.parse(message));
           setLoading(false);
         } catch (error) {
           Alert.alert(
@@ -393,78 +393,103 @@ export default function ModalNewRoutine() {
           )
         }
       />
+      <View style={[Styles.typeCreateRoutine, { backgroundColor: secondary }]}>
+        <Touchable
+          title="Crear"
+          style={Styles.buttton}
+          onPress={() => setTypeCreate("create")}
+          type={typeCreate === "create" ? "default" : "shadow"}
+        />
+        <Touchable
+          title="Importar"
+          style={Styles.buttton}
+          onPress={() => setTypeCreate("import")}
+          type={typeCreate === "import" ? "default" : "shadow"}
+        />
+      </View>
 
       {!generateAI && (
         <View style={{ marginHorizontal: 12, gap: 12, marginBottom: 12 }}>
-          <Card>
-            <ThemedText type="defaultSemiBold">Nombre de la rutina</ThemedText>
-            <ThemedInput
-              placeholder="Coloque aquí el nombre de su rutina "
-              onChangeText={setValue}
-              value={value}
-              type="shadow"
-            />
-          </Card>
+          {typeCreate === "create" && (
+            <>
+              <ThemedText type="defaultSemiBold">
+                Nombre de la rutina
+              </ThemedText>
 
-          <Card>
-            <ThemedText type="defaultSemiBold">Código de la rutina</ThemedText>
-
-            <View>
               <ThemedInput
-                style={{ marginBottom: 16 }}
-                onChangeText={setCodeRoutine}
-                value={codeRoutine}
-                placeholder="Coloque aquí el código de la rutina"
-                type="shadow"
+                placeholder="Coloque aquí el nombre de su rutina "
+                onChangeText={setValue}
+                value={value}
               />
-              {Boolean(codeRoutine.length) && !importRoutine ? (
-                <IconButton
-                  color={tint}
-                  onPress={importRoutineInDevice}
-                  name="download"
-                  style={{
-                    position: "absolute",
-                    top: "8%",
-                    alignSelf: "flex-end",
-                    right: 20,
-                  }}
+            </>
+          )}
+          {typeCreate === "import" && (
+            <>
+              <ThemedText type="defaultSemiBold">ID de rutina</ThemedText>
+
+              <View>
+                <ThemedInput
+                  onChangeText={setCodeRoutine}
+                  value={codeRoutine}
+                  placeholder="Coloque aquí el código de la rutina"
                 />
-              ) : !importRoutine ? (
-                <Pressable
-                  onPress={requestPermissionCamera}
-                  style={({ pressed }) => [
-                    {
-                      opacity: pressed ? 0.8 : 1,
+
+                {!importRoutine && (
+                  <IconButton
+                    onPress={() => importRoutineInDevice()}
+                    disabled={Boolean(!codeRoutine.length)}
+                    name="download"
+                    color={tint}
+                    style={{
                       position: "absolute",
-                      top: "25%",
+                      top: "8%",
                       alignSelf: "flex-end",
-                      right: 10,
-                    },
-                  ]}
-                >
-                  <QrCodeScan fill={tint} />
-                </Pressable>
-              ) : null}
-              {importRoutine && (
-                <ActivityIndicator
-                  size="small"
-                  color={tint}
-                  style={{
-                    position: "absolute",
-                    top: "25%",
-                    alignSelf: "flex-end",
-                    right: 10,
-                  }}
-                />
-              )}
-            </View>
-            <Touchable
-              type="shadow"
-              title="Explorar  rutinas"
-              icon="globe"
-              onPress={openCatalog}
-            />
-          </Card>
+                      right: 20,
+                    }}
+                  />
+                )}
+
+                {importRoutine && (
+                  <ActivityIndicator
+                    size="small"
+                    color={tint}
+                    style={{
+                      position: "absolute",
+                      top: "30%",
+                      alignSelf: "flex-end",
+                      right: 20,
+                    }}
+                  />
+                )}
+              </View>
+              <Pressable
+                onPress={requestPermissionCamera}
+                style={({ pressed }) => [
+                  {
+                    opacity: pressed ? 0.8 : 1,
+                    alignSelf: "center",
+                    flexDirection: "row",
+                    gap: 10,
+                    backgroundColor: primary,
+                    padding: 15,
+                    borderRadius: 10,
+                    width: "100%",
+                    justifyContent: "center",
+                    marginBottom: 15,
+                  },
+                ]}
+              >
+                <QrCodeScan fill={tint} />
+                <ThemedText>Escanear QR</ThemedText>
+              </Pressable>
+              <Touchable
+                type="shadow"
+                title="Explorar rutinas públicas"
+                icon="globe"
+                onPress={openCatalog}
+              />
+            </>
+          )}
         </View>
       )}
 
@@ -524,23 +549,23 @@ export default function ModalNewRoutine() {
         </View>
       )}
 
-      {!generateAI && (
-        <Touchable
-          title={
-            isPremium
-              ? "Crear rutina con Atlas IA"
-              : "Crea tu rutina más fácil con Atlas IA"
-          }
-          onPress={() => {
-            if (isPremium) {
-              setGenerateAI(true);
-              return;
-            }
-
-            handlePremium();
-          }}
-        />
-      )}
+      {/* {!generateAI && ( */}
+      {/*   <Touchable */}
+      {/*     title={ */}
+      {/*       isPremium */}
+      {/*         ? "Crear rutina con Atlas IA" */}
+      {/*         : "Crea tu rutina más fácil con Atlas IA" */}
+      {/*     } */}
+      {/*     onPress={() => { */}
+      {/*       if (isPremium) { */}
+      {/*         setGenerateAI(true); */}
+      {/*         return; */}
+      {/*       } */}
+      {/**/}
+      {/*       handlePremium(); */}
+      {/*     }} */}
+      {/*   /> */}
+      {/* )} */}
     </ThemedView>
   );
 }
@@ -552,5 +577,18 @@ const Styles = StyleSheet.create({
   section: {
     flexDirection: "row",
     alignItems: "center",
+  },
+  typeCreateRoutine: {
+    borderRadius: 10,
+    gap: 10,
+    padding: 10,
+    marginHorizontal: 12,
+    alignItems: "center",
+    flexDirection: "row",
+    justifyContent: "space-between",
+    marginBottom: 12,
+  },
+  buttton: {
+    flex: 1,
   },
 });

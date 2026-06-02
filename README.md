@@ -1,78 +1,78 @@
-# StrengthUp 🏋️‍♀️
+# StrengthUp
 
-**StrengthUp** is a mobile fitness tracking application built with React Native and Expo. It helps gym-goers log their workouts, track progress over time, and stay motivated with personalized insights — all in a clean, native mobile experience.
+**StrengthUp** es una aplicacion movil de seguimiento de fitness creada con React Native y Expo. Ayuda a los asistentes al gimnasio a registrar sus entrenamientos, dar seguimiento a su progreso a lo largo del tiempo y mantenerse motivados con recomendaciones personalizadas, todo en una experiencia movil nativa y limpia.
 
-Whether you're a beginner looking to build consistency or an experienced lifter analyzing performance trends, StrengthUp provides the tools to manage routines, record sets, visualize progress, and receive AI-powered coaching recommendations.
-
----
-
-## ✨ Features
-
-### 📋 Routine & Workout Management
-- Create and organize training routines with multiple workout sessions (e.g., Push A, Pull B, Leg Day)
-- Assign sessions to specific days of the week
-- Drag-and-drop reordering of both sessions and exercises
-- Import pre-built routines from a catalog via code or QR code scanner
-- AI-generated routine builder (Premium) — answer a few questions and get a structured weekly plan
-
-### 💪 Workout Tracking
-- Log sets with weight (kg) and repetitions for each exercise
-- Inline editing of logged sets during and after workouts
-- Reference previous workout data to compare performance
-- Real-time validation and batch saving
-
-### 📈 Progress Analytics
-- Weekly performance index comparing current vs. previous training volume
-- Interactive line charts showing volume trends over time (1 week, 3 months, 6 months)
-- Per-exercise performance comparisons against last session
-
-### 🤖 AI Coach (Premium)
-- OpenAI-powered coaching assistant ("Coach Atlas") analyzes your last 15 days of training data
-- Provides personalized recommendations on fatigue management, progression, and stagnation detection
-- Delivered in Markdown format within the app
-
-### 🔐 Authentication & Profiles
-- Google Sign-In and email/password authentication via Supabase
-- Editable user profiles with avatars
-- Persistent sessions across app restarts
-
-### 💳 Subscription Monetization
-- RevenueCat integration for in-app purchases
-- Premium tier unlocking AI features and advanced tools
-- Subscription status screen with expiration details and restore purchases option
-
-### 🔔 Notifications
-- Daily workout reminders scheduled at the user's preferred training time
-- Motivational evening messages with curated Spanish phrases
-- Custom notification channel with high priority and sound
-
-### 🌗 Theming & UX
-- Full dark/light mode support
-- Haptic feedback on interactions
-- Skeleton loading states
-- Custom animated tab bar
-- Spanish-first UI (MX/ES locale)
+Ya seas un principiante que busca construir consistencia o un levantador experimentado analizando tendencias de rendimiento, StrengthUp proporciona las herramientas para gestionar rutinas, registrar series, visualizar el progreso y recibir recomendaciones de entrenamiento impulsadas por IA.
 
 ---
 
-## 🛠 Tech Stack
+## Funcionalidades
 
-| Layer | Technology |
+### Gestion de Rutinas y Entrenamientos
+- Crear y organizar rutinas de entrenamiento con multiples sesiones (ej. Push A, Pull B, Dia de Pierna)
+- Asignar sesiones a dias especificos de la semana
+- Reordenar sesiones y ejercicios mediante arrastrar y soltar
+- Importar rutinas preconstruidas desde un catalogo mediante codigo o escaner QR
+- Constructor de rutinas con IA (Premium): responde unas preguntas y obtienes un plan semanal estructurado
+
+### Registro de Entrenamientos
+- Registrar series con peso (kg) y repeticiones para cada ejercicio
+- Edicion en linea de series registradas durante y despues de los entrenamientos
+- Consultar datos de entrenamientos anteriores para comparar rendimiento
+- Validacion en tiempo real y guardado por lotes
+
+### Analiticas de Progreso
+- Indice de rendimiento semanal que compara el volumen de entrenamiento actual vs. anterior
+- Graficos de lineas interactivos que muestran tendencias de volumen a lo largo del tiempo (1 semana, 3 meses, 6 meses)
+- Comparaciones de rendimiento por ejercicio contra la sesion anterior
+
+### Entrenador IA (Premium)
+- Asistente de entrenamiento impulsado por OpenAI ("Coach Atlas") que analiza tus ultimos 15 dias de datos de entrenamiento
+- Proporciona recomendaciones personalizadas sobre gestion de fatiga, progresion y deteccion de estancamiento
+- Entregado en formato Markdown dentro de la aplicacion
+
+### Autenticacion y Perfiles
+- Inicio de sesion con Google y correo electronico/contraseña mediante Supabase
+- Perfiles de usuario editables con avatares
+- Sesiones persistentes al reiniciar la aplicacion
+
+### Monetizacion por Suscripcion
+- Integracion con RevenueCat para compras dentro de la aplicacion
+- Nivel Premium que desbloquea funciones de IA y herramientas avanzadas
+- Pantalla de estado de suscripcion con detalles de vencimiento y opcion de restaurar compras
+
+### Notificaciones
+- Recordatorios diarios de entrenamiento programados a la hora preferida del usuario
+- Mensajes motivacionales vespertinos con frases en espanol
+- Canal de notificaciones personalizado con alta prioridad y sonido
+
+### Temas y Experiencia de Usuario
+- Soporte completo de modo oscuro/claro
+- Retroalimentacion haptica en las interacciones
+- Estados de carga con esqueleto
+- Barra de pestañas animada personalizada
+- Interfaz de usuario en espanol (locale MX/ES)
+
+---
+
+## Stack Tecnologico
+
+| Capa | Tecnologia |
 |-------|-----------|
 | **Framework** | React Native 0.81 + Expo 54 |
-| **Navigation** | Expo Router (file-based routing) |
+| **Navegacion** | Expo Router (enrutamiento basado en archivos) |
 | **Backend** | Supabase (Auth, PostgreSQL, Realtime) |
-| **State Management** | Zustand |
-| **Payments** | RevenueCat |
-| **AI** | OpenAI GPT-4o-mini |
-| **Charts** | react-native-gifted-charts |
-| **Drag & Drop** | react-native-draggable-flatlist |
-| **Notifications** | expo-notifications |
-| **QR/Barcode** | expo-camera |
-| **Typography** | Inter (Google Fonts) |
-| **Dates** | date-fns (es locale) |
-| **Animations** | react-native-reanimated |
-| **Storage** | expo-secure-store, AsyncStorage |
+| **Estado** | Zustand |
+| **Pagos** | RevenueCat |
+| **IA** | OpenAI GPT-4o-mini |
+| **Graficos** | react-native-gifted-charts |
+| **Arrastrar y Soltar** | react-native-draggable-flatlist |
+| **Notificaciones** | expo-notifications |
+| **QR/Codigo de Barras** | expo-camera |
+| **Tipografia** | Inter (Google Fonts) |
+| **Fechas** | date-fns (locale es) |
+| **Animaciones** | react-native-reanimated |
+| **Almacenamiento** | expo-secure-store, AsyncStorage |
 
 ![supabase](https://shields.io/badge/supabase-black?logo=supabase&style=for-the-badge)
 ![react native](https://shields.io/badge/react%20native-black?logo=react&style=for-the-badge)
@@ -83,7 +83,7 @@ Whether you're a beginner looking to build consistency or an experienced lifter 
 
 ---
 
-## 📱 Screenshots
+## Capturas de Pantalla
 
 | Login | Dashboard |
 |-------|-----------|
@@ -91,69 +91,69 @@ Whether you're a beginner looking to build consistency or an experienced lifter 
 
 ---
 
-## 🗄 Database Schema
+## Esquema de Base de Datos
 
-![Entity-Relationship Diagram](.images/strengthUp-relations.jpg)
+![Diagrama Entidad-Relacion](.images/strengthUp-relations.jpg)
 
-The application uses **Supabase** (PostgreSQL) as its primary database. Key tables include:
+La aplicacion utiliza **Supabase** (PostgreSQL) como base de datos principal. Las tablas clave incluyen:
 
-- **users** — user profiles and authentication data
-- **routines** — training routine containers
-- **workout_sessions** — individual day/block within a routine
-- **workout_sessions_exercises** — join table linking exercises to sessions
-- **exercise_sets** — logged sets with weight, reps, and timestamps
-- **user_exercises** — custom exercises created by users
-- **catalog_routines** — pre-built routines available for import
-- **settings** — user preferences (e.g., training time)
+- **users** — perfiles de usuario y datos de autenticacion
+- **routines** — contenedores de rutinas de entrenamiento
+- **workout_sessions** — dia/bloque individual dentro de una rutina
+- **workout_sessions_exercises** — tabla de union que vincula ejercicios con sesiones
+- **exercise_sets** — series registradas con peso, repeticiones y marcas de tiempo
+- **user_exercises** — ejercicios personalizados creados por los usuarios
+- **catalog_routines** — rutinas preconstruidas disponibles para importar
+- **settings** — preferencias del usuario (ej. hora de entrenamiento)
 
 ---
 
-## 📁 Project Structure
+## Estructura del Proyecto
 
 ```
 app/
-├── (auth)/              # Authentication screens (login, signup)
+├── (auth)/              # Pantallas de autenticacion (login, registro)
 ├── (personal)/
-│   ├── (routines)/      # Routine management, workout logging, history
-│   └── (settings)/      # Profile, preferences, subscription
-├── _layout.tsx          # Root layout (fonts, theme, session init)
-├── index.tsx            # Entry point (auth redirect)
-├── list-exercises.tsx   # Exercise picker
-├── hour-training.tsx    # Training time selector
-└── scanner-routine.tsx  # QR code routine scanner
+│   ├── (routines)/      # Gestion de rutinas, registro de entrenamientos, historial
+│   └── (settings)/      # Perfil, preferencias, suscripcion
+├── _layout.tsx          # Layout raiz (fuentes, tema, inicio de sesion)
+├── index.tsx            # Punto de entrada (redireccion de autenticacion)
+├── list-exercises.tsx   # Selector de ejercicios
+├── hour-training.tsx    # Selector de hora de entrenamiento
+└── scanner-routine.tsx  # Escaner QR de rutinas
 ```
 
 ---
 
-## 🚀 Getting Started
+## Primeros Pasos
 
-### Prerequisites
+### Requisitos Previos
 
 - Node.js
-- Android Studio (for Android emulator) or Xcode (for iOS simulator)
+- Android Studio (para emulador Android) o Xcode (para simulador iOS)
 - Expo CLI
 
-### Installation
+### Instalacion
 
 ```bash
-# Install dependencies
+# Instalar dependencias
 npm install
 
-# Start the Android development build
+# Iniciar la compilacion de desarrollo en Android
 npx expo run:android
 
-# Or for iOS
+# O para iOS
 npx expo run:ios
 ```
 
-### Emulator Guides
+### Guias de Emuladores
 
-- [Android Studio Emulator](https://docs.expo.dev/workflow/android-studio-emulator/)
-- [iOS Simulator](https://docs.expo.dev/workflow/ios-simulator/)
+- [Emulador de Android Studio](https://docs.expo.dev/workflow/android-studio-emulator/)
+- [Simulador de iOS](https://docs.expo.dev/workflow/ios-simulator/)
 - [Expo Go](https://expo.dev/go)
 
 ---
 
-## 📄 License
+## Licencia
 
-Private — All rights reserved.
+Privado — Todos los derechos reservados.

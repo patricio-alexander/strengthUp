@@ -24,13 +24,14 @@ import Markdown from "react-native-markdown-display";
 import { useUserStore } from "@/store/userStore";
 import { usePerformanceIndex } from "@/hooks/usePerformanceIndex";
 import { useSetsToEdit } from "@/hooks/useSetsToEdit";
-import { Octicons } from "@expo/vector-icons";
+import { MaterialCommunityIcons, Octicons } from "@expo/vector-icons";
 import { setsGroupByDay } from "@/utils/sets";
 import { FilterSets } from "@/types/filterSets";
 import { Remove } from "@/components/icons/Remove";
 import { useSets } from "@/hooks/useSets";
 import { supabase } from "@/lib/supabase";
 import { Set } from "@/types/set";
+import { LinearGradient } from "expo-linear-gradient";
 
 interface LastWorkout {
   label: string;
@@ -101,8 +102,10 @@ const useLastWorkout = (id: number) => {
 };
 
 export default function ExerciseScreen() {
-  const { tint, green, primary, secondary } = useColors();
+  const { tint, green, primary, secondary, tertiary, danger, background } =
+    useColors();
   const { isPremium } = useUserStore();
+  //const isPremium = true;
 
   const [form, setForm] = useState({ weight: "", reps: "" });
 
@@ -290,11 +293,13 @@ export default function ExerciseScreen() {
   return (
     <ThemedView>
       <NavigationHeader
+        style={{ marginBottom: 16 }}
         title={exerciseName}
         headerRight={() => (
           <IconButton
             name={!isEdit ? "plus" : "check"}
             onPress={() => (!isEdit ? setVisible(true) : saveChanges())}
+            type="contained"
           />
         )}
       />
@@ -348,9 +353,15 @@ export default function ExerciseScreen() {
           marginHorizontal: 12,
         }}
       >
-        <ThemedText type="defaultSemiBold">{formatNowDate}</ThemedText>
+        <ThemedText type="defaultSemiBold" style={{ color: tertiary }}>
+          {formatNowDate}
+        </ThemedText>
         <Link href={`/personal/history/${workoutSessionExerciseId}`} asChild>
-          <Touchable type="shadow" title="Entrenamientos previos" />
+          <Touchable
+            type="shadow"
+            title="Entrenamientos previos"
+            icon="history"
+          />
         </Link>
       </View>
       <ScrollView
@@ -440,15 +451,22 @@ export default function ExerciseScreen() {
                   reps
                 </ThemedText>
               </View>
-
-              <Remove
-                style={Styles.cell}
-                width={30}
-                height={30}
-                onPress={async () => {
-                  removeSet();
-                }}
+              <IconButton
+                name="x"
+                type="contained"
+                size={20}
+                color={danger}
+                style={{ backgroundColor: "#ef44441a" }}
               />
+
+              {/* <Remove */}
+              {/*   style={[Styles.cell]} */}
+              {/*   width={30} */}
+              {/*   height={30} */}
+              {/*   onPress={async () => { */}
+              {/*     removeSet(); */}
+              {/*   }} */}
+              {/* /> */}
             </View>
           ))}
         </View>
@@ -466,10 +484,10 @@ export default function ExerciseScreen() {
                 <View
                   style={{
                     flexDirection: "row",
-                    justifyContent: "space-between",
-                    alignItems: "center",
+                    gap: 12,
                   }}
                 >
+                  <Octicons name="calendar" color={tint} size={24} />
                   <CardTitle>Anterior entrenamiento</CardTitle>
                 </View>
                 {empty ? (
@@ -540,14 +558,13 @@ export default function ExerciseScreen() {
               <Card style={{ marginTop: 12 }}>
                 <View
                   style={{
-                    flexDirection: "row",
-                    justifyContent: "space-between",
-                    alignItems: "center",
+                    marginBottom: 16,
                   }}
                 >
-                  <CardTitle>
-                    Rendimiento con respecto a tu ultima sesión
-                  </CardTitle>
+                  <CardTitle>Rendimiento</CardTitle>
+                  <ThemedText style={{ color: tertiary }}>
+                    Comparado con tu ultima sesión
+                  </ThemedText>
                 </View>
 
                 <LevelProgressBar
@@ -603,21 +620,50 @@ export default function ExerciseScreen() {
               borderRadius: 16,
             }}
           >
+            <LinearGradient
+              colors={[tint, tertiary]}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 1 }}
+              style={StyleSheet.absoluteFill}
+            />
             {/* Título */}
-            <ThemedText type="defaultSemiBold" style={{ marginBottom: 8 }}>
-              Coach Atlas
-            </ThemedText>
+            {/* {!isPremium && ( */}
+            {/*   <BlurView */}
+            {/*     style={StyleSheet.absoluteFill} */}
+            {/*     intensity={60} */}
+            {/*     tint="dark" */}
+            {/*   /> */}
+            {/* )} */}
+            <View>
+              <MaterialCommunityIcons
+                name="star-shooting-outline"
+                color={background}
+                size={24}
+              />
+
+              <ThemedText
+                type="subtitle"
+                style={{ marginBottom: 8, color: background }}
+              >
+                Coach Atlas
+              </ThemedText>
+            </View>
 
             {/* Mensaje motivador */}
             {isPremium ? (
               <ThemedText
-                style={{ marginBottom: 12, fontStyle: "italic", color: "#ccc" }}
+                style={{
+                  marginBottom: 12,
+                  fontStyle: "italic",
+                  color: background,
+                }}
               >
                 ¡Estoy listo para decirte tu próximo paso 💪!
               </ThemedText>
             ) : (
-              <ThemedText style={{ marginBottom: 12 }}>
-                🔒 Las recomendaciones de Atlas son parte del plan premium.
+              <ThemedText style={{ marginBottom: 12, color: background }}>
+                Desbloquea recomendaciones inteligentes basadas en tu fatiga y
+                progresión histórica para maximizar cada serie.
               </ThemedText>
             )}
 
@@ -626,7 +672,7 @@ export default function ExerciseScreen() {
               <Markdown
                 style={{
                   body: {
-                    color: text,
+                    color: background,
                     fontSize: 16,
                     lineHeight: 24,
                     fontFamily: "Inter_400Regular",
@@ -634,29 +680,35 @@ export default function ExerciseScreen() {
                   },
 
                   heading1: {
+                    color: background,
+
                     marginTop: 10,
                     fontSize: 19,
                     fontFamily: "Inter_700Bold",
                   },
 
                   heading2: {
+                    color: background,
+
                     marginTop: 10,
                     fontSize: 19,
                     fontFamily: "Inter_700Bold",
                   },
 
                   heading3: {
+                    color: background,
+
                     marginTop: 10,
-                    color: text,
                     fontSize: 18,
                     fontFamily: "Inter_700Bold",
                   },
 
                   strong: {
+                    color: background,
+
                     fontSize: 16,
                     lineHeight: 24,
                     fontFamily: "Inter_600SemiBold",
-                    color: tint,
                   },
                 }}
               >
@@ -665,18 +717,11 @@ export default function ExerciseScreen() {
             )}
 
             {/* Blur para no premium */}
-            {!isPremium && (
-              <BlurView
-                style={StyleSheet.absoluteFill}
-                intensity={60}
-                tint="dark"
-              />
-            )}
 
             {/* Botón de acción */}
             {isPremium && !Boolean(recomendation) && (
               <Touchable
-                title="Ver recomendación"
+                title="GENERAR RECOMENDACIÓN"
                 style={{ marginBottom: 12 }}
                 disabled={waitRecomendation}
                 onPress={() => generateAtlasRecomendation()}
@@ -691,11 +736,9 @@ export default function ExerciseScreen() {
             )}
 
             {!isPremium && (
-              <IconButton
-                name="lock"
-                type="contained"
+              <Touchable
+                title="OBTENER PREMIUM"
                 onPress={() => Paywall.presentPaywall()}
-                style={{ alignSelf: "flex-end" }}
               />
             )}
           </Card>

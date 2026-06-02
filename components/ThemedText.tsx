@@ -51,11 +51,11 @@ const styles = StyleSheet.create({
     fontFamily: "Inter_800ExtraBold",
   },
   subtitle: {
-    fontSize: 20,
+    fontSize: 18,
     fontFamily: "Inter_700Bold",
   },
   link: {
-    lineHeight: 30,
+    lineHeight: 28,
     fontSize: 16,
     color: "#0a7ea4",
     fontFamily: "Inter_100Thin",

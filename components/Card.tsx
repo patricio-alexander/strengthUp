@@ -24,13 +24,13 @@ export const Card: React.FC<CardProps> = ({ style, children }) => {
 };
 
 export const CardTitle: React.FC<CardTitleProps> = ({ ...rest }) => {
-  return <ThemedText type="defaultSemiBold" style={Styles.title} {...rest} />;
+  return <ThemedText type="subtitle" style={Styles.title} {...rest} />;
 };
 
 const Styles = StyleSheet.create({
   card: {
-    borderRadius: 10,
-    padding: 15,
+    borderRadius: 16,
+    padding: 20,
     shadowColor: "#000",
     shadowOffset: { width: 9, height: -11 },
     shadowOpacity: 0.1,

@@ -2,7 +2,6 @@ import { Redirect, Tabs } from "expo-router";
 import React from "react";
 
 import { HapticTab } from "@/components/HapticTab";
-import TabBarBackground from "@/components/ui/TabBarBackground";
 import { Colors } from "@/constants/Colors";
 import { useColorScheme } from "@/hooks/useColorScheme";
 import { Octicons } from "@expo/vector-icons";
@@ -14,10 +13,12 @@ import { useNotifications } from "@/hooks/useNotifications";
 export default function TabLayout() {
   const colorScheme = useColorScheme();
   const { session, user } = useUserStore();
+
+  useNotifications(user?.id);
+
   if (!session) {
     return <Redirect href={{ pathname: "/" }} />;
   }
-  useNotifications(user?.id);
 
   return (
     <Tabs
@@ -26,26 +27,24 @@ export default function TabLayout() {
 
         tabBarActiveTintColor: Colors[colorScheme ?? "light"].tint,
         tabBarInactiveTintColor: Colors[colorScheme ?? "light"].tabIconDefault,
-        tabBarShowLabel: false,
         tabBarHideOnKeyboard: true,
         headerShown: false,
         tabBarButton: HapticTab,
-        tabBarBackground: TabBarBackground,
         tabBarItemStyle: {
           alignItems: "center",
           flexDirection: "row",
         },
         tabBarStyle: {
-          backgroundColor: Colors[colorScheme ?? "light"].secondary,
+          backgroundColor: Colors[colorScheme ?? "light"].background,
         },
       }}
     >
       <Tabs.Screen
         name="(routines)"
         options={{
-          title: "routines",
+          title: "INICIO",
           tabBarIcon: ({ color }) => (
-            <Octicons name="graph" size={20} color={color} />
+            <Octicons name="home" size={20} color={color} />
           ),
         }}
       />
@@ -53,7 +52,7 @@ export default function TabLayout() {
       <Tabs.Screen
         name="(settings)"
         options={{
-          title: "settings",
+          title: "AJUSTES",
           tabBarIcon: ({ color }) => <SettingsIcon color={color} />,
         }}
       />

@@ -12,18 +12,49 @@ type LevelProgressBarProps = ViewProps & {
 
 const badgeColors = {
   light: {
-    max: "#00e606",
-    medium: "#86efac",
-    stable: "#ffff00",
-    low: "#ffc7c7",
-    veryLow: "#ff5757",
+    max: {
+      bg: "rgba(0, 230, 6, 0.15)",
+      text: "#00a304",
+    },
+    medium: {
+      bg: "rgba(134, 239, 172, 0.25)",
+      text: "#15803d",
+    },
+    stable: {
+      bg: "rgba(255, 255, 0, 0.25)",
+      text: "#9a8f00",
+    },
+    low: {
+      bg: "rgba(255, 199, 199, 0.35)",
+      text: "#b91c1c",
+    },
+    veryLow: {
+      bg: "rgba(255, 87, 87, 0.35)",
+      text: "#991b1b",
+    },
   },
+
   dark: {
-    max: "#00e606",
-    medium: "#bfff50",
-    stable: "#ffff00",
-    low: "#ffb232",
-    veryLow: "#ff5757",
+    max: {
+      bg: "rgba(0, 230, 6, 0.18)",
+      text: "#22c55e",
+    },
+    medium: {
+      bg: "rgba(191, 255, 80, 0.2)",
+      text: "#a3e635",
+    },
+    stable: {
+      bg: "rgba(255, 255, 0, 0.2)",
+      text: "#fde047",
+    },
+    low: {
+      bg: "rgba(255, 178, 50, 0.25)",
+      text: "#f59e0b",
+    },
+    veryLow: {
+      bg: "rgba(255, 87, 87, 0.25)",
+      text: "#ef4444",
+    },
   },
 };
 
@@ -41,55 +72,55 @@ export const LevelProgressBar = ({ value, style }: LevelProgressBarProps) => {
 
   const getMessageStatusProgres = () => {
     if (porcentage >= 80) {
-      return "excelente";
+      return "EXCELENTE";
     }
     if (porcentage > 50) {
-      return "avanzando";
+      return "AVANZANDO";
     }
     if (porcentage > 30 && porcentage <= 50) {
-      return "estable";
+      return "ESTABLE";
     }
     if (porcentage <= 20) {
-      return "Necesita atención";
+      return "NECESITA ATENCION";
     }
 
     if (porcentage <= 30) {
-      return "Descendiendo";
+      return "DESCENDIENDO";
     }
   };
 
   const getColorBadge = () => {
     if (porcentage >= 80) {
       return {
-        bg: badgeColors[theme].max,
-        text: theme === "dark" ? secondary : text,
+        bg: badgeColors[theme].max.bg,
+        text: badgeColors[theme].max.text,
       };
     }
     if (porcentage >= 65) {
       return {
-        bg: badgeColors[theme].medium,
-        text: theme === "dark" ? secondary : text,
+        bg: badgeColors[theme].medium.bg,
+        text: badgeColors[theme].medium.text,
       };
     }
 
     if (porcentage > 30 && porcentage < 65) {
       return {
-        bg: badgeColors[theme].stable,
-        text: theme === "dark" ? secondary : text,
+        bg: badgeColors[theme].stable.bg,
+        text: badgeColors[theme].stable.text,
       };
     }
 
     if (porcentage <= 20) {
       return {
-        bg: badgeColors[theme].veryLow,
-        text: theme === "dark" ? secondary : text,
+        bg: badgeColors[theme].veryLow.bg,
+        text: badgeColors[theme].veryLow.text,
       };
     }
 
     if (porcentage <= 30) {
       return {
-        bg: badgeColors[theme].low,
-        text: theme === "dark" ? secondary : text,
+        bg: badgeColors[theme].low.bg,
+        text: badgeColors[theme].low.text,
       };
     }
   };
@@ -97,11 +128,12 @@ export const LevelProgressBar = ({ value, style }: LevelProgressBarProps) => {
   return (
     <View style={style}>
       <View style={{ flexDirection: "row", gap: 6, marginBottom: 8 }}>
-        <ThemedText style={{ fontSize: 14 }}>Tu rendimiento actual</ThemedText>
+        <ThemedText style={{ fontSize: 14 }}>Estado actual:</ThemedText>
         <ThemedText
+          type="defaultSemiBold"
           style={{
             backgroundColor: getColorBadge()?.bg,
-            borderRadius: 100,
+            borderRadius: 10,
             paddingHorizontal: 10,
             color: getColorBadge()?.text,
             fontSize: 14,
@@ -114,7 +146,7 @@ export const LevelProgressBar = ({ value, style }: LevelProgressBarProps) => {
         style={{
           flexDirection: "row",
           justifyContent: "space-between",
-          marginBottom: 4,
+          marginBottom: 16,
         }}
       >
         <View style={styles.type}>
@@ -124,7 +156,7 @@ export const LevelProgressBar = ({ value, style }: LevelProgressBarProps) => {
               cy="15"
               r="15"
               strokeWidth="2.5"
-              fill={badgeColors[theme].veryLow}
+              fill={badgeColors[theme].veryLow.text}
             />
           </Svg>
 
@@ -137,7 +169,7 @@ export const LevelProgressBar = ({ value, style }: LevelProgressBarProps) => {
               cy="15"
               r="15"
               strokeWidth="2.5"
-              fill={badgeColors[theme].stable}
+              fill={badgeColors[theme].stable.text}
             />
           </Svg>
 
@@ -150,7 +182,7 @@ export const LevelProgressBar = ({ value, style }: LevelProgressBarProps) => {
               cy="15"
               r="15"
               strokeWidth="2.5"
-              fill={badgeColors[theme].max}
+              fill={badgeColors[theme].max.text}
             />
           </Svg>
 
@@ -158,19 +190,19 @@ export const LevelProgressBar = ({ value, style }: LevelProgressBarProps) => {
         </View>
       </View>
       <LinearGradient
-        colors={["#FF0000", "#FFFF00", "#00e606"]}
+        colors={["#ff4d4d", "#ffcc00", "#00e676"]}
         start={{ x: 0, y: 0 }}
         end={{ x: 1, y: 0 }}
-        style={{ borderRadius: 100, height: 10, position: "relative" }}
+        style={{ borderRadius: 100, height: 6, position: "relative" }}
         onLayout={(e) => setBarWidth(e.nativeEvent.layout.width)}
       >
         <Svg
-          height="40"
-          width="10"
+          height="30"
+          width="20"
           viewBox="0 0 40 40"
           style={{
             position: "absolute",
-            transform: [{ translateY: -22 }],
+            transform: [{ translateY: -18 }],
             left: safeLeft,
           }}
         >

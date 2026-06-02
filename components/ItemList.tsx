@@ -53,7 +53,7 @@ const Styles = StyleSheet.create({
   pressable: {
     paddingHorizontal: 16,
     paddingVertical: 12,
-    borderRadius: 8,
+    borderRadius: 16,
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",

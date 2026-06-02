@@ -119,7 +119,9 @@ const useRoutines = (userId: string | undefined) => {
 
   useFocusEffect(
     useCallback(() => {
-      getRoutines();
+      if (userId) {
+        getRoutines();
+      }
     }, [userId]),
   );
 
@@ -179,7 +181,7 @@ export default function HomeScreen() {
 
   const progressIndex = usePerformanceIndex(workoutSets);
   const day = format(new Date(), "eeee").toLocaleLowerCase();
-  const { block, getBlock, exist, isLoadingWorkout } = useWorkoutToTrain(
+  const { block, exist, isLoadingWorkout } = useWorkoutToTrain(
     day,
     routine?.id,
   );
@@ -191,6 +193,7 @@ export default function HomeScreen() {
 
   const removeRoutine = async (routineId: string) => {
     await supabase.from("routines").delete().eq("id", routineId);
+    getRoutines();
   };
 
   const remove = async () => {
@@ -235,17 +238,20 @@ export default function HomeScreen() {
   return (
     <ThemedView>
       <ThemedText
-        type="defaultSemiBold"
+        type="subtitle"
         style={{ marginHorizontal: 12, marginBottom: 12 }}
       >
-        {useGreeting()} {user?.username}
+        {useGreeting()},{" "}
+        <ThemedText type="subtitle" style={{ color: tint }}>
+          {user?.username}
+        </ThemedText>
       </ThemedText>
 
       <ScrollView
         contentContainerStyle={{
           paddingBottom: 100,
-          marginHorizontal: 12,
-          gap: 12,
+          marginHorizontal: 10,
+          gap: 16,
         }}
       >
         <Skeleton isLoading={isLoadingWorkout}>
@@ -270,7 +276,9 @@ export default function HomeScreen() {
               <ItemList
                 value={() => (
                   <View>
-                    <ThemedText>{routine?.name}</ThemedText>
+                    <ThemedText type="defaultSemiBold">
+                      {routine?.name}
+                    </ThemedText>
                     <ThemedText style={{ color: tertiary }}>
                       {useDaysInRoutine(routine?.countWorkoutSessions)}
                     </ThemedText>
@@ -278,8 +286,9 @@ export default function HomeScreen() {
                 )}
                 right={() => (
                   <IconButton
+                    type="contained"
                     name="pencil"
-                    size={26}
+                    size={20}
                     onPress={() => {
                       setRoutineId(routine?.id);
                       setRoutineName(routine?.name ?? "");
@@ -303,10 +312,11 @@ export default function HomeScreen() {
               asChild
             >
               <ItemList
+                style={{ borderLeftColor: tint, borderLeftWidth: 2 }}
                 value={() => {
                   return (
                     <View>
-                      <CardTitle>Entrenamiento para hoy</CardTitle>
+                      <CardTitle>Entrenamiento de hoy</CardTitle>
                       <View style={styles.cardContent}>
                         <Octicons name="zap" size={20} color={tint} />
                         <ThemedText>{block.name}</ThemedText>
@@ -337,7 +347,7 @@ export default function HomeScreen() {
               }}
             >
               <CardTitle style={{ width: "90%", marginBottom: 8 }}>
-                Rendimiento con respecto a la semana anterior
+                Rendimiento semanal
               </CardTitle>
               <IconButton
                 name="info"

@@ -33,6 +33,7 @@ import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { Colors } from "@/constants/Colors";
 
 import { supabase } from "@/lib/supabase";
+import { getUserByIdUseCase } from "@/src/di/container";
 
 // Prevent the splash screen from auto-hiding before asset loading is complete.
 
@@ -93,16 +94,12 @@ export default function RootLayout() {
       setSession({ session });
 
       if (session) {
-        const { data: user, error } = await supabase
-          .from("users")
-          .select()
-          .eq("id", session.user.id)
-          .single();
-        if (!error) {
-          setAppIsReady(true);
+        try {
+          const user = await getUserByIdUseCase.get(session.user.id);
           setUser(user);
-          //console.log(user);
-          return;
+          setAppIsReady(true);
+        } catch (error) {
+          console.log(error);
         }
       }
 

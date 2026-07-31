@@ -1,23 +1,11 @@
 import { supabase } from "@/lib/supabase";
 
-type sets = {
-  reps: number;
-  weight: number;
-};
-
-type Days = {
-  name: string;
-  exercises: Array<string>;
-  sets: sets[];
-  day: number;
-};
-
 export const importRoutieFromCatalog = async ({
   code,
   userId,
 }: {
   code: string;
-  userId: number;
+  userId: string;
 }) => {
   const { data } = await supabase
     .from("catalog_routines")

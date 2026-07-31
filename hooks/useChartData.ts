@@ -1,8 +1,6 @@
 import { Filter } from "@/types/filters";
-import { sets } from "@/db/schema";
 import { useEffect, useState } from "react";
 import { setsGroupByMonth, setsGroupByWeek } from "@/utils/sets";
-import { Set } from "@/types/set";
 import { GroupSetsByDate } from "@/types/groupByDay";
 
 export const useChartData = (range: Filter, sets: GroupSetsByDate[]) => {

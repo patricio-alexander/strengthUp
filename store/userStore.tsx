@@ -1,20 +1,6 @@
 import { Session } from "@supabase/supabase-js";
 import { create } from "zustand";
-
-export enum Role {
-  Personal = "personal",
-  Personalized = "personalized",
-  Coach = "coach",
-}
-
-type User = {
-  id: string;
-  email: string;
-  username: string;
-  avatar_url: string;
-  role: string;
-};
-//export type Role = "personal" | "personalized" | "coach" | null;
+import { User, Role } from "@/src/features/user/domain/user-entity";
 
 type UserState = {
   user: User | null;

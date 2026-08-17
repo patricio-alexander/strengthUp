@@ -1,16 +1,11 @@
-import {
-  Image,
-  View,
-  StyleSheet,
-  Dimensions,
-} from "react-native";
+import { Image, View, StyleSheet, Dimensions } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import { ThemedText } from "@/components/ThemedText";
 import { useUserStore } from "@/store/userStore";
 import { Redirect } from "expo-router";
 import { GoogleButton } from "@/components/GoogleButton";
 const { height } = Dimensions.get("window");
-import { useLoginWithGoogle } from "./hooks/useLoginWithGoogle";
+import { useLoginWithGoogle } from "./viewmodel/useLoginWithGoogle";
 /*
  
  Coordenadas para el linear gradient

@@ -1,6 +1,6 @@
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
-import { Set } from "@/types/set";
+import { Set } from "@features/workouts/domain/entities/set";
 import { GroupSetsByDate } from "@/types/groupByDay";
 
 export const setsGroupByMonth = (sets: GroupSetsByDate[]) => {

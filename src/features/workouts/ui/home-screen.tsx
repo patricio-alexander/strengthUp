@@ -27,8 +27,7 @@ import { setsGroupByDay } from "@/utils/sets";
 import { GroupSetsByDate } from "@/types/groupByDay";
 import { Octicons } from "@expo/vector-icons";
 import { Skeleton } from "@/components/Skeleton";
-import { useGetUserWorkout } from "./hooks/useGetUserWorkout";
-import { useRemoveWorkout } from "./hooks/useRemoveWorkout";
+import { useWorkoutVM } from "./ViewModel/useWorkoutVM";
 
 const useGreeting = () => {
   const hour = new Date().getHours();
@@ -123,8 +122,13 @@ const useWorkoutSetsData = (userId: string | undefined) => {
 export default function HomeScreen() {
   const { user } = useUserStore();
 
-  const { workout, isLoading, error: fetchError, fetchWorkout } = useGetUserWorkout(user?.id);
-  const { removeWorkout, error: removeError } = useRemoveWorkout();
+  const {
+    workout,
+    isLoading,
+    error,
+    fetchWorkout,
+    removeWorkout,
+  } = useWorkoutVM(user?.id);
   const { tint, foreground, text, primary, tertiary } = useColors();
   const [visibleIndex, setVisibleIndex] = useState(false);
 
@@ -198,9 +202,12 @@ export default function HomeScreen() {
         </ThemedText>
       </ThemedText>
 
-      {fetchError && (
-        <ThemedText type="error" style={{ marginHorizontal: 12, marginBottom: 12 }}>
-          {fetchError}
+      {error && (
+        <ThemedText
+          type="error"
+          style={{ marginHorizontal: 12, marginBottom: 12 }}
+        >
+          {error}
         </ThemedText>
       )}
 
@@ -387,12 +394,6 @@ export default function HomeScreen() {
         <ThemedText type="defaultSemiBold">
           Actualizar nombre de la rutina
         </ThemedText>
-
-        {removeError && (
-          <ThemedText type="error" style={{ marginTop: 8 }}>
-            {removeError}
-          </ThemedText>
-        )}
 
         <ThemedInput onChangeText={setRoutineName} value={routineName} />
         <View

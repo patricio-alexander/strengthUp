@@ -8,7 +8,7 @@ import DraggableFlatList from "react-native-draggable-flatlist";
 import { IconButton } from "@/components/IconButton";
 import { View } from "react-native";
 import { Skeleton } from "@/components/Skeleton";
-import { useGetBlocks } from "./hooks/useGetBlocks";
+import { useBlockVM } from "./ViewModel/useBlockVM";
 import { useColors } from "@/hooks/useColors";
 
 const useExercisesInDay = (total: number) => {
@@ -28,7 +28,9 @@ export default function RoutineScreen() {
   const router = useRouter();
   const [routineName, routineId] = routine;
   const { tertiary } = useColors();
-  const { blocks, isLoading, error, order } = useGetBlocks(Number(routineId));
+  const { blocks, isLoading, error, order } = useBlockVM({
+    workoutId: Number(routineId),
+  });
 
   return (
     <ThemedView>
@@ -40,7 +42,10 @@ export default function RoutineScreen() {
         Bloques
       </ThemedText>
       {error && (
-        <ThemedText type="error" style={{ marginHorizontal: 12, marginBottom: 12 }}>
+        <ThemedText
+          type="error"
+          style={{ marginHorizontal: 12, marginBottom: 12 }}
+        >
           {error}
         </ThemedText>
       )}

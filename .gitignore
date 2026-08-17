@@ -4,7 +4,7 @@
 node_modules/
 
 .env
-notifications-strengthup-firebase-fcmv1.json
+push-notifications-strengthup-firebase-adminsdk-fbsvc-67a7d0daa3.json
 google-services.json
 exercises.csv
 

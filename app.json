@@ -70,8 +70,7 @@
           "icon": "./assets/images/icon_notification.png",
           "color": "#ffffff",
           "defaultChannel": "default",
-          "sounds": ["./assets/sounds/notify_strength_up.wav"],
-          "enableBackgroundRemoteNotifications": false
+          "sounds": ["./assets/sounds/notify_strength_up.wav"]
         }
       ],
       [

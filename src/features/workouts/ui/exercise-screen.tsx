@@ -18,88 +18,16 @@ import { Card, CardTitle } from "@/components/Card";
 import { ActivityIndicator } from "react-native";
 import { useColors } from "@/hooks/useColors";
 import { LevelProgressBar } from "@/components/LevelProgressBar";
-import { BlurView } from "expo-blur";
 import Paywall from "react-native-purchases-ui";
 import Markdown from "react-native-markdown-display";
 import { useUserStore } from "@/store/userStore";
 import { usePerformanceIndex } from "@/hooks/usePerformanceIndex";
 import { useSetsToEdit } from "@/hooks/useSetsToEdit";
 import { MaterialCommunityIcons, Octicons } from "@expo/vector-icons";
-import { setsGroupByDay } from "@/utils/sets";
 import { FilterSets } from "@/types/filterSets";
-import { Remove } from "@/components/icons/Remove";
-import { useSets } from "@/hooks/useSets";
 import { supabase } from "@/lib/supabase";
-import { Set } from "@/types/set";
 import { LinearGradient } from "expo-linear-gradient";
-
-interface LastWorkout {
-  label: string;
-  sets: Set[] | [];
-}
-
-const useLastWorkout = (id: number) => {
-  const [lastWorkout, setLastWorkout] = useState<LastWorkout>({
-    label: "",
-    sets: [],
-  });
-
-  const [empty, setEmpty] = useState(false);
-
-  useEffect(() => {
-    const getLastWorkout = async () => {
-      const date = new Date();
-      date.setDate(date.getDate() - 1);
-
-      const { data } = await supabase
-        .from("exercise_sets")
-        .select()
-        .eq("workout_session_exercise_id", id)
-        .lt("performed_at", new Date().toISOString())
-        .limit(30);
-
-      if (!data?.length) {
-        return setEmpty(true);
-      }
-
-      const sorted = data.sort(
-        (a, b) =>
-          new Date(a.performed_at).getTime() -
-          new Date(b.performed_at).getTime(),
-      );
-
-      const result = setsGroupByDay(sorted);
-
-      const today = format(new Date(), "MMM dd yyyy", { locale: es });
-
-      const filter = result.filter(
-        (s) =>
-          format(new Date(s.date), "MMM dd yyyy", { locale: es }) !== today,
-      );
-
-      const slice = filter.slice(filter.length - 1);
-
-      if (!slice.length) {
-        return setEmpty(true);
-      }
-
-      const lastSet = slice.flatMap((m) => ({
-        label: format(new Date(m.date), "MMM dd yyyy", { locale: es }),
-        sets: m.sets.filter((s) => new Date(s.performed_at) < new Date()),
-      }));
-      const [{ label, sets }] = lastSet;
-
-      //
-      setLastWorkout({
-        label,
-        sets,
-      });
-    };
-    getLastWorkout();
-  }, []);
-
-  return { lastWorkout, empty };
-};
+import { useSetsVM } from "./ViewModel/useSetVM";
 
 export default function ExerciseScreen() {
   const { tint, green, primary, secondary, tertiary, danger, background } =
@@ -117,15 +45,27 @@ export default function ExerciseScreen() {
 
   const [visible, setVisible] = useState(false);
 
-  const { sets: setsStore, getSets: getSetsToday } = useSets(
-    Number(workoutSessionExerciseId),
-    FilterSets.today,
-  );
+  const {
+    sets: todaySets,
+    isLoading: isLoadingTodaySets,
+    error: errorTodaySets,
+    getSets: getSetsToday,
+    addNewSet,
+    removeSet,
+  } = useSetsVM(Number(workoutSessionExerciseId), FilterSets.today);
+
   const {
     sets: allSets,
-    isLoading,
+    isLoading: isLoadingAllSets,
+    error: errorAllSets,
     getSets: getAllSets,
-  } = useSets(Number(workoutSessionExerciseId), FilterSets.all);
+    addNewSet: addNewSetAllSets,
+  } = useSetsVM(Number(workoutSessionExerciseId), FilterSets.all);
+
+  const { lastSession, isLastSessionLoading, getLastSession } = useSetsVM(
+    Number(workoutSessionExerciseId),
+    FilterSets.all,
+  );
 
   const [isEdit, setIsEdit] = useState(false);
   const [recomendation, setRecomendation] = useState("");
@@ -134,18 +74,16 @@ export default function ExerciseScreen() {
   const indexPerformance = usePerformanceIndex(allSets);
 
   const { setsToEdit, updateOnlyValuesToEdit } = useSetsToEdit();
-  const { lastWorkout, empty } = useLastWorkout(
-    Number(workoutSessionExerciseId),
-  );
 
-  const checkIfProgressSets = lastWorkout.sets.map((s, i) => {
-    if (setsStore[0]?.sets.length && setsStore[0]?.sets[i]) {
+  const checkIfProgressSets = lastSession?.sets.map((s, i) => {
+    if (todaySets[0]?.sets.length && todaySets[0]?.sets[i]) {
       return {
         weight: s.weight,
         reps: s.reps,
         progresed:
-          setsStore[0].sets[i].weight * setsStore[0].sets[i].reps >
-          s.reps * s.weight,
+          Number(todaySets[0].sets[i].weight) *
+            Number(todaySets[0].sets[i].reps) >
+          Number(s.reps) * Number(s.weight),
       };
     }
     return {
@@ -156,7 +94,7 @@ export default function ExerciseScreen() {
   });
 
   const lastWorkoutProgress = {
-    label: lastWorkout.label,
+    label: lastSession?.label,
     sets: checkIfProgressSets,
   };
 
@@ -199,17 +137,6 @@ export default function ExerciseScreen() {
       });
   };
 
-  const addNewSet = async () => {
-    await supabase.from("exercise_sets").insert({
-      weight: Number(form.weight.replace(",", ".")),
-      reps: Number(form.reps.replace(",", ".")),
-      performed_at: new Date().toISOString(),
-      workout_session_exercise_id: Number(workoutSessionExerciseId),
-    });
-    getSetsToday();
-    resetForm();
-    setVisible(false);
-  };
   const openAI = useMemo(
     () =>
       new OpenAI({
@@ -283,10 +210,6 @@ export default function ExerciseScreen() {
     };
   }, []);
 
-  const removeSet = async () => {
-    await getSetsToday();
-  };
-
   return (
     <ThemedView>
       <NavigationHeader
@@ -337,7 +260,16 @@ export default function ExerciseScreen() {
           <Touchable
             title="Guardar"
             disabled={!Boolean(form.reps.length && form.weight.length)}
-            onPress={() => addNewSet()}
+            onPress={async () => {
+              await addNewSet(Number(workoutSessionExerciseId), {
+                weight: form.weight.replace(",", "."),
+                reps: form.reps.replace(",", "."),
+                performed_at: new Date().toISOString(),
+              });
+              getSetsToday();
+              resetForm();
+              setVisible(false);
+            }}
           />
         </View>
       </Modal>
@@ -367,7 +299,7 @@ export default function ExerciseScreen() {
         showsVerticalScrollIndicator={false}
       >
         <View style={{ gap: 6 }}>
-          {setsStore[0]?.sets.map((item, index) => (
+          {todaySets[0]?.sets.map((item, index) => (
             <View style={Styles.row} key={index}>
               <ThemedText type="defaultSemiBold" style={Styles.cell}>
                 Serie {index + 1}
@@ -394,7 +326,7 @@ export default function ExerciseScreen() {
                   onChangeText={(weight) => {
                     setIsEdit(true);
                     updateOnlyValuesToEdit({
-                      setId: item.id,
+                      setId: Number(item.id),
                       weight: Number(weight.replace(",", ".")),
                     });
                   }}
@@ -432,7 +364,7 @@ export default function ExerciseScreen() {
                   onChangeText={(reps) => {
                     setIsEdit(true);
                     updateOnlyValuesToEdit({
-                      setId: item.id,
+                      setId: Number(item.id),
                       reps: Number(reps.replace(",", ".")),
                     });
                   }}
@@ -454,22 +386,17 @@ export default function ExerciseScreen() {
                 size={20}
                 color={danger}
                 style={{ backgroundColor: "#ef44441a" }}
+                onPress={async () => {
+                  await removeSet(Number(item.id));
+                  getSetsToday();
+                }}
               />
-
-              {/* <Remove */}
-              {/*   style={[Styles.cell]} */}
-              {/*   width={30} */}
-              {/*   height={30} */}
-              {/*   onPress={async () => { */}
-              {/*     removeSet(); */}
-              {/*   }} */}
-              {/* /> */}
             </View>
           ))}
         </View>
 
         <View>
-          {isLoading ? (
+          {isLoadingTodaySets || isLoadingAllSets ? (
             <ActivityIndicator
               size="large"
               color={tint}
@@ -487,7 +414,7 @@ export default function ExerciseScreen() {
                   <Octicons name="calendar" color={tint} size={24} />
                   <CardTitle>Anterior entrenamiento</CardTitle>
                 </View>
-                {empty ? (
+                {lastSession?.sets.length === 0 ? (
                   <ThemedText style={{ color: tint }}>
                     No existe entrenamiento previo
                   </ThemedText>
@@ -496,7 +423,7 @@ export default function ExerciseScreen() {
                     <ThemedText style={{ marginBottom: 12 }}>
                       {lastWorkoutProgress.label}
                     </ThemedText>
-                    {lastWorkoutProgress.sets.map((s, i) => (
+                    {lastWorkoutProgress?.sets?.map((s, i) => (
                       <View
                         key={i}
                         style={{
@@ -569,43 +496,6 @@ export default function ExerciseScreen() {
                   style={{ marginBottom: 12 }}
                 />
               </Card>
-              {/* {gifId && ( */}
-              {/*   <Card */}
-              {/*     style={{ */}
-              {/*       marginTop: 12, */}
-              {/*       alignItems: "center", */}
-              {/*     }} */}
-              {/*   > */}
-              {/*     <View */}
-              {/*       style={{ */}
-              {/*         width: 150, */}
-              {/*         height: 150, */}
-              {/*         borderRadius: 10, */}
-              {/*         overflow: "hidden", */}
-              {/*         alignItems: "center", */}
-              {/*         justifyContent: "center", */}
-              {/*       }} */}
-              {/*     > */}
-              {/*       {isLoadingImage && ( */}
-              {/*         <View */}
-              {/*           style={{ */}
-              {/*             position: "absolute", */}
-              {/*           }} */}
-              {/*         > */}
-              {/*           <ActivityIndicator color={tint} size={"large"} /> */}
-              {/*           <ThemedText>Cargando figura</ThemedText> */}
-              {/*         </View> */}
-              {/*       )} */}
-              {/*       <Image */}
-              {/*         style={{ width: "100%", height: "100%" }} */}
-              {/*         source={{ */}
-              {/*           uri: `https://catalog-routines.netlify.app/exercises/${gifId}.gif`, */}
-              {/*         }} */}
-              {/*         onLoadEnd={() => setIsLoadingImage(false)} */}
-              {/*       /> */}
-              {/*     </View> */}
-              {/*   </Card> */}
-              {/* )} */}
             </>
           )}
 
@@ -623,14 +513,7 @@ export default function ExerciseScreen() {
               end={{ x: 1, y: 1 }}
               style={StyleSheet.absoluteFill}
             />
-            {/* Título */}
-            {/* {!isPremium && ( */}
-            {/*   <BlurView */}
-            {/*     style={StyleSheet.absoluteFill} */}
-            {/*     intensity={60} */}
-            {/*     tint="dark" */}
-            {/*   /> */}
-            {/* )} */}
+
             <View>
               <MaterialCommunityIcons
                 name="star-shooting-outline"

@@ -23,7 +23,7 @@ import { useColors } from "@/hooks/useColors";
 import { QrCodeScan } from "@/components/icons/QrCode";
 import { useCameraPermissions } from "expo-camera";
 import { importRoutieFromCatalog } from "@/utils/importRoutineFromCatalog";
-import { useAddWorkout } from "./hooks/useAddWorkout";
+import { useWorkoutVM } from "./ViewModel/useWorkoutVM";
 
 export default function NewRoutineScreen() {
   const { user, setIsPremium } = useUserStore();
@@ -33,7 +33,7 @@ export default function NewRoutineScreen() {
   const [importRoutine, setImportRoutine] = useState<boolean>(false);
   const [_, requestPermission] = useCameraPermissions();
   const [typeCreate, setTypeCreate] = useState<"create" | "import">("create");
-  const { addWorkout, error } = useAddWorkout();
+  const { addWorkout, error } = useWorkoutVM();
 
   const [codeRoutine, setCodeRoutine] = useState("");
 
@@ -96,7 +96,10 @@ export default function NewRoutineScreen() {
         }}
       />
       {error && (
-        <ThemedText type="error" style={{ marginHorizontal: 12, marginBottom: 12 }}>
+        <ThemedText
+          type="error"
+          style={{ marginHorizontal: 12, marginBottom: 12 }}
+        >
           {error}
         </ThemedText>
       )}

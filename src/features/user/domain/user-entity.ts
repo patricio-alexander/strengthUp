@@ -13,3 +13,8 @@ export type User = {
   avatar_url: string;
   role: Role;
 };
+
+export interface UserSettings {
+  userId: string;
+  hour_to_train: string;
+}

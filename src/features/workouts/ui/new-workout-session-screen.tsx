@@ -8,17 +8,10 @@ import { Alert, View } from "react-native";
 import { isValidName } from "@/helpers/inputValidation";
 import { useLocalSearchParams, useNavigation } from "expo-router";
 import { ThemedCheckBox } from "@/components/ThemedCheckbox";
-import { useAddBlock } from "./hooks/useAddBlock";
-import { useGetBlockById } from "./hooks/useGetBlockById";
-import { useUpdateBlock } from "./hooks/useUpdateBlock";
-import { useRemoveBlock } from "./hooks/useRemoveBlock";
+import { useBlockVM } from "./ViewModel/useBlockVM";
 
 export default function NewWorkoutSessionScreen() {
   const [valueInput, setValueInput] = useState("");
-
-  const { addBlock, error: addError } = useAddBlock();
-  const { updateBlock, error: updateError } = useUpdateBlock();
-  const { removeBlock, error: removeError } = useRemoveBlock();
 
   const [daysWeek, setDaysWeek] = useState([
     { name: "Lunes", check: false, key: "monday" },
@@ -34,11 +27,11 @@ export default function NewWorkoutSessionScreen() {
     value: string;
     workoutSessionId: string;
   }>();
-  const { block, error: fetchError } = useGetBlockById(Number(workoutSessionId));
-
-  const error = addError || updateError || removeError || fetchError;
-
   const navigation = useNavigation();
+
+  const { addBlock, updateBlock, removeBlock, block, error } = useBlockVM({
+    blockId: Number(workoutSessionId),
+  });
 
   useEffect(() => {
     if (block) {
@@ -151,7 +144,10 @@ export default function NewWorkoutSessionScreen() {
       />
 
       {error && (
-        <ThemedText type="error" style={{ marginHorizontal: 12, marginBottom: 12 }}>
+        <ThemedText
+          type="error"
+          style={{ marginHorizontal: 12, marginBottom: 12 }}
+        >
           {error}
         </ThemedText>
       )}

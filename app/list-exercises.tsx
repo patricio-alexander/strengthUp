@@ -1,7 +1,7 @@
 import { ItemList } from "@/components/ItemList";
 import { ThemedView } from "@/components/ThemedView";
 import { useThemeColor } from "@/hooks/useThemeColor";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { FlatList, View, StyleSheet, Alert } from "react-native";
 import { IconButton } from "@/components/IconButton";
 import { ThemedText } from "@/components/ThemedText";
@@ -11,59 +11,9 @@ import { NavigationHeader } from "@/components/NavigationHeader";
 import { isValidName } from "@/helpers/inputValidation";
 import { Modal } from "@/components/Modal";
 import { useLocalSearchParams } from "expo-router";
-import { supabase } from "@/lib/supabase";
-import { Exercises } from "@/types/exercises";
-import { useSelectedExercises } from "@/hooks/useSelectedExercises";
 import { Skeleton } from "@/components/Skeleton";
-import { useUserStore } from "@/store/userStore";
 import { useColors } from "@/hooks/useColors";
-
-const useDefaultExercises = () => {
-  const [defaultExercises, setDefaultExercises] = useState<Exercises[]>([]);
-
-  const fetchDefaultExercises = async () => {
-    const { data } = await supabase
-      .from("user_exercises")
-      .select()
-      .eq("default_exercise", true);
-    if (!data?.length) {
-      return;
-    }
-
-    setDefaultExercises(data);
-  };
-
-  useEffect(() => {
-    fetchDefaultExercises();
-  }, []);
-  return { defaultExercises, fetchDefaultExercises };
-};
-
-const useUserExercises = (userId: string | undefined) => {
-  const [exercises, setExercises] = useState<Exercises[]>([]);
-
-  const fetchExercises = async () => {
-    const { data } = await supabase
-      .from("user_exercises")
-      .select()
-      .eq("user_id", userId);
-
-    if (data) {
-      setExercises(data);
-    }
-  };
-
-  const removeExercise = async ({ id }: { id: number }) => {
-    setExercises((prev) => prev.filter((e) => e.id !== id));
-    await supabase.from("user_exercises").delete().eq("id", id);
-  };
-
-  useEffect(() => {
-    fetchExercises();
-  }, []);
-
-  return { exercises, fetchExercises, removeExercise };
-};
+import { useExercisesVM } from "@features/workouts/ui/ViewModel/useExercisesVM";
 
 enum ExercisesFilter {
   myExercises,
@@ -72,14 +22,19 @@ enum ExercisesFilter {
 
 export default function ModalAddExercices() {
   const { workoutId } = useLocalSearchParams<{ workoutId: string }>();
-  const { user } = useUserStore();
 
-  const { exercises, fetchExercises, removeExercise } = useUserExercises(
-    user?.id,
-  );
-  const { selectedExercises, isLoading, fetchSelectedExercises } =
-    useSelectedExercises(workoutId);
-  const { defaultExercises } = useDefaultExercises();
+  const {
+    exercises,
+    defaultExercises,
+    isLoading,
+    isDefaultLoading,
+    removeExercise,
+    addExercise,
+    updateExercise,
+    addExerciseToWorkout,
+    removeExerciseFromWorkout,
+    isExerciseSelected,
+  } = useExercisesVM(workoutId);
   const { secondary } = useColors();
 
   const bg = useThemeColor({}, "background");
@@ -98,13 +53,10 @@ export default function ModalAddExercices() {
       return;
     }
 
-    await supabase.from("user_exercises").insert({
-      name: exerciseName,
-      user_id: user?.id,
-    });
+    const success = await addExercise(exerciseName);
+    if (!success) return;
 
     setVisible(false);
-    fetchExercises();
     setExerciseName("");
   };
 
@@ -120,29 +72,16 @@ export default function ModalAddExercices() {
       return;
     }
 
-    const { error } = await supabase
-      .from("user_exercises")
-      .update({ name: exerciseName })
-      .eq("id", exerciseId);
+    const success = await updateExercise(exerciseName, exerciseId);
+    if (!success) return;
 
     setVisible(false);
     setIsEdit(false);
-    fetchExercises();
   };
 
-  const selectExercise = async ({ exerciseId }: { exerciseId: number }) => {
-    const { count: exist } = await supabase
-      .from("workout_sessions_exercises")
-      .select("*", { count: "exact", head: true })
-      .eq("exercise_id", exerciseId)
-      .eq("workout_id", workoutId);
-
-    if (!exist) {
-      await supabase
-        .from("workout_sessions_exercises")
-        .insert({ workout_id: workoutId, exercise_id: exerciseId });
-      fetchSelectedExercises();
-
+  const selectExercise = ({ exerciseId }: { exerciseId: number }) => {
+    if (!isExerciseSelected(exerciseId)) {
+      addExerciseToWorkout(exerciseId);
       return;
     }
 
@@ -155,31 +94,25 @@ export default function ModalAddExercices() {
         },
         {
           text: "Aceptar",
-          onPress: async () => {
-            await supabase
-              .from("workout_sessions_exercises")
-              .delete()
-              .eq("exercise_id", exerciseId)
-              .eq("workout_id", workoutId);
-            fetchSelectedExercises();
-          },
+          onPress: () => removeExerciseFromWorkout(exerciseId),
         },
       ],
     );
   };
 
-  let filter: Exercises[] = [];
+  const source =
+    exercisesFilter === ExercisesFilter.defaultExercises
+      ? defaultExercises
+      : exercises;
 
-  if (exercisesFilter === ExercisesFilter.myExercises) {
-    filter = exercises.filter(({ name }) =>
-      name?.toLocaleUpperCase().includes(search.toUpperCase()),
-    );
-  }
-  if (exercisesFilter === ExercisesFilter.defaultExercises) {
-    filter = defaultExercises.filter(({ name }) =>
-      name?.toLocaleUpperCase().includes(search.toUpperCase()),
-    );
-  }
+  const filter = source.filter((exercise) =>
+    exercise.name?.toLocaleUpperCase().includes(search.toUpperCase()),
+  );
+
+  const isListLoading =
+    exercisesFilter === ExercisesFilter.defaultExercises
+      ? isDefaultLoading
+      : isLoading;
 
   return (
     <ThemedView>
@@ -262,7 +195,7 @@ export default function ModalAddExercices() {
             title="Eliminar"
             disabled={!exerciseName.length}
             onPress={() => {
-              removeExercise({ id: Number(exerciseId) });
+              removeExercise(Number(exerciseId));
               setVisible(false);
               setExerciseName("");
               setExerciseId(0);
@@ -270,22 +203,23 @@ export default function ModalAddExercices() {
           />
         )}
       </Modal>
-      {isLoading ? (
+      {isListLoading ? (
         <View style={{ marginHorizontal: 12, gap: 12 }}>
-          <Skeleton isLoading={isLoading}>
+          <Skeleton isLoading={isListLoading}>
             <ItemList value="" />
           </Skeleton>
-          <Skeleton isLoading={isLoading}>
+          <Skeleton isLoading={isListLoading}>
             <ItemList value="" />
           </Skeleton>
-          <Skeleton isLoading={isLoading}>
+          <Skeleton isLoading={isListLoading}>
             <ItemList value="" />
           </Skeleton>
         </View>
-      ) : !exercises.length &&
-        exercisesFilter === ExercisesFilter.myExercises ? (
+      ) : !filter.length ? (
         <ThemedText style={{ textAlign: "center" }}>
-          No hay ejercicios. ¡Agrega uno!
+          {exercisesFilter === ExercisesFilter.myExercises
+            ? "No hay ejercicios. ¡Agrega uno!"
+            : "No hay ejercicios disponibles"}
         </ThemedText>
       ) : (
         <>
@@ -306,16 +240,12 @@ export default function ModalAddExercices() {
                     }}
                     value={item.name as string}
                     style={
-                      selectedExercises.some(
-                        (exercise) => item.id === exercise.id,
-                      ) && {
+                      isExerciseSelected(item.id) && {
                         backgroundColor: tint,
                       }
                     }
                     textStyle={
-                      selectedExercises.some(
-                        (exercise) => item.id === exercise.id,
-                      ) && { color: bg }
+                      isExerciseSelected(item.id) && { color: bg }
                     }
                     onPress={() => selectExercise({ exerciseId: item.id })}
                   />
@@ -335,16 +265,12 @@ export default function ModalAddExercices() {
                   <ItemList
                     value={item.name as string}
                     style={
-                      selectedExercises.some(
-                        (exercise) => item.id === exercise.id,
-                      ) && {
+                      isExerciseSelected(item.id) && {
                         backgroundColor: tint,
                       }
                     }
                     textStyle={
-                      selectedExercises.some(
-                        (exercise) => item.id === exercise.id,
-                      ) && { color: bg }
+                      isExerciseSelected(item.id) && { color: bg }
                     }
                     onPress={() => selectExercise({ exerciseId: item.id })}
                   />

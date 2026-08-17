@@ -1,40 +1,23 @@
 import { ThemedView } from "@/components/ThemedView";
-import { Link, useFocusEffect, useLocalSearchParams } from "expo-router";
-import { useCallback } from "react";
+import { Link, useLocalSearchParams } from "expo-router";
 import { ThemedText } from "@/components/ThemedText";
 import { ItemList } from "@/components/ItemList";
 import { NavigationHeader } from "@/components/NavigationHeader";
 import DraggableFlatList from "react-native-draggable-flatlist";
 import { IconButton } from "@/components/IconButton";
-import { useSelectedExercises } from "@/hooks/useSelectedExercises";
-import { SelectedExercises } from "@/types/selectedExercises";
-import { supabase } from "@/lib/supabase";
 import { Skeleton } from "@/components/Skeleton";
 import { View } from "react-native";
+import { useExercisesVM } from "@features/workouts/ui/ViewModel/useExercisesVM";
 
 export default function WorkoutScreen() {
   const { workout } = useLocalSearchParams();
   const [workoutName, workoutId] = workout;
 
-  const { selectedExercises, isLoading, fetchSelectedExercises } =
-    useSelectedExercises(workoutId);
-
-  const sort = async (data: SelectedExercises[]) => {
-    await Promise.all(
-      data.map((item, index) =>
-        supabase
-          .from("workout_sessions_exercises")
-          .update({ sorted: index })
-          .eq("id", item.workoutSesssionExerciseId),
-      ),
-    );
-  };
-
-  useFocusEffect(
-    useCallback(() => {
-      fetchSelectedExercises();
-    }, []),
-  );
+  const {
+    selectedExercises,
+    isSelectedLoading: isLoading,
+    orderSelectedExercises,
+  } = useExercisesVM(workoutId);
 
   return (
     <ThemedView>
@@ -61,12 +44,12 @@ export default function WorkoutScreen() {
       ) : (
         <DraggableFlatList
           contentContainerStyle={{ paddingBottom: 200 }}
-          onDragEnd={({ data }) => sort(data)}
+          onDragEnd={({ data }) => orderSelectedExercises(data)}
           keyExtractor={(item) => item.id.toString()}
           data={selectedExercises}
           renderItem={({ item, drag }) => (
             <Link
-              href={`/personal/exercise/${item.name}/${item.workoutSesssionExerciseId}`}
+              href={`/personal/exercise/${item.name}/${item.workoutSessionExerciseId}`}
               asChild
               style={{ marginBottom: 12, marginHorizontal: 12 }}
             >

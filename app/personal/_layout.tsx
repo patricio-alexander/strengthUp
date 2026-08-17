@@ -7,14 +7,16 @@ import { useColorScheme } from "@/hooks/useColorScheme";
 import { Octicons } from "@expo/vector-icons";
 import SettingsIcon from "@/components/icons/Settings";
 import { useUserStore } from "@/store/userStore";
+import { useRoutineStore } from "@/store/routineStore";
 
 import { useNotifications } from "@/hooks/useNotifications";
 
 export default function TabLayout() {
   const colorScheme = useColorScheme();
   const { session, user } = useUserStore();
+  const { workoutId } = useRoutineStore();
 
-  useNotifications(user?.id);
+  useNotifications(user?.id, workoutId);
 
   if (!session) {
     return <Redirect href={{ pathname: "/" }} />;

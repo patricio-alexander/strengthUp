@@ -29,6 +29,14 @@ import { supabase } from "@/lib/supabase";
 import { LinearGradient } from "expo-linear-gradient";
 import { useSetsVM } from "./ViewModel/useSetVM";
 
+const prompt = `
+      Eres un entrenador experto en fitness y sobrecarga progresiva, 
+      genera una recomendación en base a las ultimos 15 dias.
+      Haz un analisis y haz una recomendación sintetica de lo que debe hacer
+      sin rodeos.
+      - Genera un texto perfecto
+`;
+
 export default function ExerciseScreen() {
   const { tint, green, primary, secondary, tertiary, danger, background } =
     useColors();
@@ -59,7 +67,6 @@ export default function ExerciseScreen() {
     isLoading: isLoadingAllSets,
     error: errorAllSets,
     getSets: getAllSets,
-    addNewSet: addNewSetAllSets,
   } = useSetsVM(Number(workoutSessionExerciseId), FilterSets.all);
 
   const { lastSession, isLastSessionLoading, getLastSession } = useSetsVM(
@@ -97,14 +104,6 @@ export default function ExerciseScreen() {
     label: lastSession?.label,
     sets: checkIfProgressSets,
   };
-
-  const prompt = `
-      Eres un entrenador experto en fitness y sobrecarga progresiva, 
-      genera una recomendación en base a las ultimos 15 dias.
-      Haz un analisis y haz una recomendación sintetica de lo que debe hacer
-      sin rodeos.
-      - Genera un texto perfecto
-`;
 
   const end = new Date();
   end.setHours(0, 0, 0, 0);
@@ -215,13 +214,25 @@ export default function ExerciseScreen() {
       <NavigationHeader
         style={{ marginBottom: 16 }}
         title={exerciseName}
-        headerRight={() => (
-          <IconButton
-            name={!isEdit ? "plus" : "check"}
-            onPress={() => (!isEdit ? setVisible(true) : saveChanges())}
-            type="contained"
-          />
-        )}
+        headerRight={() => {
+          if (isLoadingTodaySets) {
+            return (
+              <ActivityIndicator
+                size="large"
+                color={tint}
+                style={{ marginTop: 20 }}
+              />
+            );
+          }
+
+          return (
+            <IconButton
+              name={!isEdit ? "plus" : "check"}
+              onPress={() => (!isEdit ? setVisible(true) : saveChanges())}
+              type="contained"
+            />
+          );
+        }}
       />
 
       <Modal
@@ -261,14 +272,15 @@ export default function ExerciseScreen() {
             title="Guardar"
             disabled={!Boolean(form.reps.length && form.weight.length)}
             onPress={async () => {
-              await addNewSet(Number(workoutSessionExerciseId), {
+              resetForm();
+              setVisible(false);
+              addNewSet(Number(workoutSessionExerciseId), {
                 weight: form.weight.replace(",", "."),
                 reps: form.reps.replace(",", "."),
                 performed_at: new Date().toISOString(),
+              }).then(() => {
+                getSetsToday();
               });
-              getSetsToday();
-              resetForm();
-              setVisible(false);
             }}
           />
         </View>
@@ -414,7 +426,7 @@ export default function ExerciseScreen() {
                   <Octicons name="calendar" color={tint} size={24} />
                   <CardTitle>Anterior entrenamiento</CardTitle>
                 </View>
-                {lastSession?.sets.length === 0 ? (
+                {!lastSession ? (
                   <ThemedText style={{ color: tint }}>
                     No existe entrenamiento previo
                   </ThemedText>

@@ -4,6 +4,6 @@ export class GetLastSessionUseCase {
   constructor(private setsRepository: SetsRepository) {}
 
   async getLastSession(exerciseId: number) {
-    return this.setsRepository.getLastSession(exerciseId);
+    return await this.setsRepository.getLastSession(exerciseId);
   }
 }

@@ -23,19 +23,23 @@ export class SetsRepositoryImpl implements SetsRepository {
     }
   }
 
-  async getLastSession(exerciseId: number): Promise<LastSession> {
+  async getLastSession(exerciseId: number): Promise<LastSession | null> {
     const date = new Date();
     date.setDate(date.getDate() - 1);
 
-    const { data } = await supabase
+    const { data, error } = await supabase
       .from("exercise_sets")
       .select()
       .eq("workout_session_exercise_id", exerciseId)
       .lt("performed_at", new Date().toISOString())
       .limit(30);
 
-    if (!data?.length) {
-      return { label: "", sets: [] };
+    if (error) {
+      throw new Error("Error al obtener la última sesión");
+    }
+
+    if (!data.length) {
+      return null;
     }
 
     const sorted = data.sort(
@@ -54,7 +58,7 @@ export class SetsRepositoryImpl implements SetsRepository {
     const slice = filter.slice(filter.length - 1);
 
     if (!slice.length) {
-      return { label: "", sets: [] };
+      return null;
     }
 
     const lastSet = slice.flatMap((m) => ({
@@ -63,6 +67,9 @@ export class SetsRepositoryImpl implements SetsRepository {
     }));
     const [{ label, sets }] = lastSet;
 
+    if (!label || !sets.length) {
+      return null;
+    }
     return { label, sets };
   }
 

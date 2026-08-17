@@ -5,6 +5,6 @@ export class GetSetsUseCase {
   constructor(private setsRepository: SetsRepository) {}
 
   async getSets(exerciseId: number, filter: FilterSets) {
-    return this.setsRepository.getSets(exerciseId, filter);
+    return await this.setsRepository.getSets(exerciseId, filter);
   }
 }

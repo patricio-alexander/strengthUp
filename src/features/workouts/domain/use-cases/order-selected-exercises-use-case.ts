@@ -5,6 +5,6 @@ export class OrderSelectedExercisesUseCase {
   constructor(private exerciseRepository: ExerciseRepository) {}
 
   async order(exercises: SelectedExercise[]): Promise<void> {
-    return this.exerciseRepository.orderSelectedExercises(exercises);
+    return await this.exerciseRepository.orderSelectedExercises(exercises);
   }
 }

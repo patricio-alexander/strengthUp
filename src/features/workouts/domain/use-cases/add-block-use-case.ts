@@ -4,6 +4,6 @@ export class AddBlockUseCase {
   constructor(private blockRepository: BlockRepository) {}
 
   async add(block: CreateBlock) {
-    return this.blockRepository.addBlock(block);
+    return await this.blockRepository.addBlock(block);
   }
 }

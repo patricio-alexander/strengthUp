@@ -5,6 +5,6 @@ export class GetSelectedExercisesUseCase {
   constructor(private exerciseRepository: ExerciseRepository) {}
 
   async get(workoutId: number): Promise<SelectedExercise[]> {
-    return this.exerciseRepository.getSelectedExercises(workoutId);
+    return await this.exerciseRepository.getSelectedExercises(workoutId);
   }
 }

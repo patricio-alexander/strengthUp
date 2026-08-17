@@ -4,6 +4,6 @@ export class RemoveBlockUseCase {
   constructor(private blockRepository: BlockRepository) {}
 
   async remove(blockId: number) {
-    return this.blockRepository.removeBlock(blockId);
+    return await this.blockRepository.removeBlock(blockId);
   }
 }

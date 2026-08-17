@@ -4,6 +4,6 @@ export class RemoveWorkoutUseCase {
   constructor(private workoutRepository: WorkoutRepository) {}
 
   async remove(id: string) {
-    return await this.workoutRepository.removeWorkout(id);
+    await this.workoutRepository.removeWorkout(id);
   }
 }

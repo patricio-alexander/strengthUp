@@ -4,6 +4,6 @@ export class AddExerciseUseCase {
   constructor(private exerciseRepository: ExerciseRepository) {}
 
   async add(name: string, userId: string) {
-    return this.exerciseRepository.addExercise(name, userId);
+    return await this.exerciseRepository.addExercise(name, userId);
   }
 }

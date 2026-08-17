@@ -5,6 +5,6 @@ export class AddNewSetUseCase {
   constructor(private setsRepository: SetsRepository) {}
 
   async addNewset(set: CreateSet, exerciseId: number) {
-    this.setsRepository.addNewSet(set, exerciseId);
+    await this.setsRepository.addNewSet(set, exerciseId);
   }
 }

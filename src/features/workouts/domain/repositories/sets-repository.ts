@@ -7,5 +7,5 @@ export interface SetsRepository {
   removeSet(setId: number): Promise<void>;
   updateSet(setId: string, set: CreateSet): Promise<void>;
   getSets(exerciseId: number, filter: FilterSets): Promise<GroupSetsByDate[]>;
-  getLastSession(exerciseId: number): Promise<LastSession>;
+  getLastSession(exerciseId: number): Promise<LastSession | null>;
 }

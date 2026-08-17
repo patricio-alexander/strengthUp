@@ -12,9 +12,9 @@ import { format } from "date-fns";
 import { KeyboardAwareScrollView } from "react-native-keyboard-controller";
 import { useSetsToEdit } from "@/hooks/useSetsToEdit";
 import { useColors } from "@/hooks/useColors";
-import { useSets } from "@/hooks/useSets";
 import { FilterSets } from "@/types/filterSets";
 import { supabase } from "@/lib/supabase";
+import { useSetsVM } from "./ViewModel/useSetVM";
 
 export default function HistoryScreen() {
   const { tint } = useColors();
@@ -27,7 +27,7 @@ export default function HistoryScreen() {
   });
 
   const { setsToEdit, updateOnlyValuesToEdit } = useSetsToEdit();
-  const { sets, getSets } = useSets(Number(history), FilterSets.past);
+  const { sets, getSets } = useSetsVM(Number(history), FilterSets.past);
 
   const saveChanges = async () => {
     await Promise.all(
@@ -109,7 +109,7 @@ export default function HistoryScreen() {
                           onChangeText={(weight) => {
                             setIsEdit(true);
                             updateOnlyValuesToEdit({
-                              setId: item.id,
+                              setId: Number(item.id),
                               weight: Number(weight.replace(",", ".")),
                             });
                           }}
@@ -138,7 +138,7 @@ export default function HistoryScreen() {
                           onChangeText={(reps) => {
                             setIsEdit(true);
                             updateOnlyValuesToEdit({
-                              setId: item.id,
+                              setId: Number(item.id),
                               reps: Number(reps.replace(",", ",")),
                             });
                           }}

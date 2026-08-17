@@ -1,9 +1,5 @@
-import { useState, useCallback, useEffect } from "react";
-import {
-  CreateSet,
-  LastSession,
-  Set,
-} from "@features/workouts/domain/entities/set";
+import { useState, useEffect } from "react";
+import { CreateSet, LastSession } from "@features/workouts/domain/entities/set";
 import {
   addNewSetUseCase,
   getLastSessionUseCase,
@@ -43,7 +39,6 @@ export const useSetsVM = (exerciseId: number, filter: FilterSets) => {
   const getLastSession = async () => {
     try {
       setIsLastSessionLoading(true);
-      setError(null);
       const result = await getLastSessionUseCase.getLastSession(exerciseId);
       setLastSession(result);
     } catch (err) {
@@ -67,6 +62,7 @@ export const useSetsVM = (exerciseId: number, filter: FilterSets) => {
 
   useEffect(() => {
     getSets();
+    getLastSession();
   }, [filter]);
 
   return {

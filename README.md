@@ -7,14 +7,20 @@ Ya seas un principiante que busca construir consistencia o un levantador experim
 ## Arquitectura
 
 ![Arch](.images/architecture.png)
+![Clean Architecture](.images/PDD.png)
 
-Se aplicó Clean Architecture(basado en la guía de arquitectura de Android de Google), el proyecto sigue una organizacón Feature First, cada feature conteniendo las tres capas, Presentación, Dominio, y Datos:
+Se aplicó Clean Architecture, junto con la guía de arquitectura de Android de Google, el proyecto sigue una organizacón Feature First, cada feature conteniendo las tres capas, Presentación, Dominio, y Datos:
 
 - Presentation: Views (Components, Screens) + ViewModel
 - Domain: Entidades (Workout, Sets, Block, User), interfaces de repositories y casos de uso
 - Data: Implementación de repositorios, uso de supabase como backend
 
-Porque de esta manera respeta la regla de depencia, esto hace que el proyecto sea mantenible, testeable y escalable a largo del tiempo. Además favorece que la capa de datos no dependa directamente de Supabase, es decir tiene bajo acoplamiento.
+## ¿Por qué?
+
+1. Cada módulo está aislado lo más posible
+2. El código ahora es testeable, escalable y mantenible a largo plazo
+3. La capa de datos ya no está ligada directamente a Supabase
+4. Respetamos la regla de dependencia
 
 ## Funcionalidades
 

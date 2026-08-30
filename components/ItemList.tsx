@@ -1,5 +1,4 @@
 import {
-  Pressable,
   StyleSheet,
   type PressableProps,
   ViewStyle,
@@ -10,6 +9,7 @@ import {
 import { ThemedText } from "./ThemedText";
 import { useThemeColor } from "@/hooks/useThemeColor";
 import React, { forwardRef } from "react";
+import { PressableScale } from "./PressableScale";
 
 type ItemListProps = PressableProps & {
   value: string | (() => React.ReactNode) | null;
@@ -24,15 +24,11 @@ export const ItemList = forwardRef<View, ItemListProps>(
     const tint = useThemeColor({}, "secondary");
 
     return (
-      <Pressable
+      <PressableScale
         ref={ref}
+        scaleTo={0.98}
         {...props}
-        style={({ pressed }) => [
-          Styles.pressable,
-
-          { opacity: pressed ? 0.5 : 1, backgroundColor: tint },
-          style,
-        ]}
+        style={[Styles.pressable, { backgroundColor: tint }, style]}
       >
         <View style={{ flex: 1 }}>
           {left?.()}
@@ -44,7 +40,7 @@ export const ItemList = forwardRef<View, ItemListProps>(
           )}
         </View>
         <View>{right?.()}</View>
-      </Pressable>
+      </PressableScale>
     );
   },
 );

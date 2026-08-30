@@ -1,23 +1,24 @@
-import { Pressable, PressableProps, Text, useColorScheme } from "react-native";
+import { PressableProps, Text, useColorScheme } from "react-native";
 import { GoogleLogo } from "./icons/GoogleLogo";
+import { PressableScale } from "./PressableScale";
 
 export const GoogleButton = ({ onPress }: PressableProps) => {
   const theme = useColorScheme() ?? "light";
   return (
-    <Pressable
+    <PressableScale
       onPress={onPress}
-      style={({ pressed }) => ({
+      scaleTo={0.97}
+      style={{
         flexDirection: "row",
         alignItems: "center",
         backgroundColor: theme === "dark" ? "#131314" : "#F2F2F2",
         borderRadius: 100,
         borderColor: theme === "dark" ? "#8E918F" : "#747775",
         borderWidth: 1,
-        opacity: pressed ? 0.8 : 1,
         paddingHorizontal: 14,
         paddingVertical: 12,
         gap: 12,
-      })}
+      }}
     >
       <GoogleLogo />
 
@@ -31,6 +32,6 @@ export const GoogleButton = ({ onPress }: PressableProps) => {
       >
         Continuar con Google
       </Text>
-    </Pressable>
+    </PressableScale>
   );
 };

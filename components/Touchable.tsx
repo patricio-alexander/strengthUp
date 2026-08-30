@@ -1,14 +1,10 @@
-import {
-  Pressable,
-  useColorScheme,
-  View,
-  type PressableProps,
-} from "react-native";
+import { useColorScheme, View, type PressableProps } from "react-native";
 import { ThemedText } from "./ThemedText";
 import React from "react";
 import { Octicons } from "@expo/vector-icons";
 import { StyleProp, ViewStyle } from "react-native";
 import { Colors } from "@/constants/Colors";
+import { PressableScale } from "./PressableScale";
 
 type ButtonProps = PressableProps & {
   title?: string;
@@ -28,13 +24,11 @@ export const Touchable = React.forwardRef<View, ButtonProps>(
     const { primary, text, danger } = Colors[colorScheme];
 
     return (
-      <Pressable
+      <PressableScale
         ref={ref}
         delayLongPress={100}
-        style={({ pressed }) => [
-          {
-            opacity: !pressed ? 1 : 0.6,
-          },
+        scaleTo={0.96}
+        style={[
           disabled && {
             opacity: 0.6,
           },
@@ -93,7 +87,7 @@ export const Touchable = React.forwardRef<View, ButtonProps>(
             {title}
           </ThemedText>
         </View>
-      </Pressable>
+      </PressableScale>
     );
   },
 );

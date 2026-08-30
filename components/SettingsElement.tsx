@@ -1,8 +1,9 @@
 import { useColors } from "@/hooks/useColors";
-import { StyleSheet, View, Pressable, PressableProps } from "react-native";
+import { StyleSheet, View, PressableProps } from "react-native";
 import { Octicons } from "@expo/vector-icons";
 import { forwardRef } from "react";
 import { ThemedText } from "./ThemedText";
+import { PressableScale } from "./PressableScale";
 
 type SettingsElementProps = PressableProps & {
   icon: keyof typeof Octicons.glyphMap;
@@ -14,15 +15,11 @@ export const SettingsElement = forwardRef<View, SettingsElementProps>(
     const { tint } = useColors();
 
     return (
-      <Pressable
+      <PressableScale
         ref={ref}
+        scaleTo={0.97}
         {...props}
-        style={({ pressed }) => [
-          Styles.container,
-          {
-            opacity: pressed ? 0.6 : 1,
-          },
-        ]}
+        style={Styles.container}
       >
         <View style={Styles.element}>
           <Octicons name={icon} size={20} color={tint} />
@@ -34,7 +31,7 @@ export const SettingsElement = forwardRef<View, SettingsElementProps>(
         {/*   size={20} */}
         {/*   color={tint} */}
         {/* /> */}
-      </Pressable>
+      </PressableScale>
     );
   },
 );

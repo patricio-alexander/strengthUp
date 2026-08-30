@@ -1,6 +1,7 @@
-import { StyleSheet, TouchableOpacity, View } from "react-native";
+import { StyleSheet, View } from "react-native";
 import { ThemedText } from "./ThemedText";
 import { useColors } from "@/hooks/useColors";
+import { PressableScale } from "./PressableScale";
 
 type Button = {
   value: string;
@@ -26,8 +27,9 @@ export const SegmentedButtons = ({
         const active = selected === value;
 
         return (
-          <TouchableOpacity
+          <PressableScale
             key={value}
+            scaleTo={0.96}
             style={[
               styles.button,
               {
@@ -36,7 +38,6 @@ export const SegmentedButtons = ({
               },
             ]}
             onPress={() => onValueChange(value)}
-            activeOpacity={0.7}
             accessibilityRole="button"
           >
             <ThemedText
@@ -47,7 +48,7 @@ export const SegmentedButtons = ({
             >
               {label}
             </ThemedText>
-          </TouchableOpacity>
+          </PressableScale>
         );
       })}
     </View>

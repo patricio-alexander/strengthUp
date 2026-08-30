@@ -1,13 +1,8 @@
 import React, { forwardRef } from "react";
-import {
-  Pressable,
-  type PressableProps,
-  StyleProp,
-  View,
-  ViewStyle,
-} from "react-native";
+import { type PressableProps, StyleProp, View, ViewStyle } from "react-native";
 import { Octicons } from "@expo/vector-icons";
 import { useColors } from "@/hooks/useColors";
+import { PressableScale } from "./PressableScale";
 
 type IconButtonProps = PressableProps & {
   name: keyof typeof Octicons.glyphMap;
@@ -29,36 +24,34 @@ export const IconButton = forwardRef<View, IconButtonProps>(
     const borderRadius = totalSize / 2;
 
     return (
-      <Pressable
+      <PressableScale
         ref={ref}
-        style={({ pressed }) => [
-          [
-            {
-              opacity: pressed ? 0.5 : 1,
-              alignItems: "center",
-              justifyContent: "center",
-            },
-            type == "default" && {
-              paddingVertical: 8,
-            },
-            type === "contained" && {
-              borderRadius,
-              width: totalSize,
-              backgroundColor: primary,
-              height: totalSize,
-            },
+        scaleTo={0.88}
+        style={[
+          {
+            alignItems: "center",
+            justifyContent: "center",
+          },
+          type == "default" && {
+            paddingVertical: 8,
+          },
+          type === "contained" && {
+            borderRadius,
+            width: totalSize,
+            backgroundColor: primary,
+            height: totalSize,
+          },
 
-            disabled && {
-              opacity: 0.6,
-            },
-            style,
-          ],
+          disabled && {
+            opacity: 0.6,
+          },
+          style,
         ]}
         {...rest}
         disabled={disabled}
       >
         <Octicons name={name} size={size ?? 26} color={color ? color : icon} />
-      </Pressable>
+      </PressableScale>
     );
   },
 );

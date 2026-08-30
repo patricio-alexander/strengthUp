@@ -1,10 +1,10 @@
-import { TouchableOpacity } from "react-native";
 import { StyleSheet } from "react-native";
 import { ThemedText } from "./ThemedText";
 import { Href, Link } from "expo-router";
 
 import { Role } from "@/store/userStore";
 import { useColors } from "@/hooks/useColors";
+import { PressableScale } from "./PressableScale";
 
 type RoleCardProps = {
   role: Role;
@@ -47,8 +47,8 @@ export const RoleCard = ({
         },
       ]}
     >
-      <TouchableOpacity
-        activeOpacity={0.7}
+      <PressableScale
+        scaleTo={0.97}
         disabled={disabled}
         style={{ opacity: disabled ? 0.7 : 1 }}
       >
@@ -62,7 +62,7 @@ export const RoleCard = ({
 
         <ThemedText>{description}</ThemedText>
         {disabled && <ThemedText>(Proximamente)</ThemedText>}
-      </TouchableOpacity>
+      </PressableScale>
     </Link>
   );
 };
